@@ -1509,55 +1509,67 @@ namespace BMU.VRTour.Editor
             sun.shadows = LightShadows.Soft;
             sunObj.transform.rotation = Quaternion.Euler(48f, 35f, 0f);
 
-            // Campus Plaza Ground Floor (140m x 140m on Layer 0; locomotion via curated anchors only)
-            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Campus_Terrain_And_Roads";
-            ground.transform.position = new Vector3(0f, -0.1f, 0f);
-            ground.transform.localScale = new Vector3(140f, 0.2f, 140f);
-            ground.layer = 0;
-            Material groundMat = GetOrCreateMaterial("Assets/Materials/M_CampusPlazaGround.mat", new Color(0.74f, 0.76f, 0.78f), 0.3f);
-            ground.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
+            // Custom High-Fidelity Campus Exterior Environment Prefab
+            GameObject exteriorPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Environment/Prefab_Exterior_Campus.prefab");
+            if (exteriorPrefab != null)
+            {
+                GameObject envInstance = (GameObject)PrefabUtility.InstantiatePrefab(exteriorPrefab);
+                envInstance.name = "Campus_Exterior_Environment";
+                envInstance.transform.position = Vector3.zero;
+                envInstance.transform.rotation = Quaternion.identity;
+                envInstance.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // Halved scale per user request
+            }
+            else
+            {
+                // Fallback to primitive placeholder facades if prefab not generated yet
+                GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ground.name = "Campus_Terrain_And_Roads";
+                ground.transform.position = new Vector3(0f, -0.1f, 0f);
+                ground.transform.localScale = new Vector3(140f, 0.2f, 140f);
+                ground.layer = 0;
+                Material groundMat = GetOrCreateMaterial("Assets/Materials/M_CampusPlazaGround.mat", new Color(0.74f, 0.76f, 0.78f), 0.3f);
+                ground.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
 
-            // Architecture Facades Parent
-            GameObject archParent = new GameObject("Architecture_Exteriors");
+                GameObject archParent = new GameObject("Architecture_Exteriors");
+                CreateBuildingFacade(archParent.transform, "FrontGate_Monument", "BMU MAIN GATEWAY",
+                    new Vector3(0f, 0f, 18f), new Vector3(16f, 7f, 3f), new Color(0.85f, 0.22f, 0.22f));
+                CreateBuildingFacade(archParent.transform, "NorthBlock_Exterior_Facade", "NORTH BLOCK (ACADEMIC COMPLEX)",
+                    new Vector3(35f, 0f, 25f), new Vector3(24f, 9f, 16f), new Color(0.68f, 0.25f, 0.22f));
+                CreateBuildingFacade(archParent.transform, "Gateway_Exterior_Facade", "THE GATEWAY (ADMIN & INCUBATOR)",
+                    new Vector3(-35f, 0f, 25f), new Vector3(22f, 11f, 16f), new Color(0.20f, 0.38f, 0.58f));
+                CreateBuildingFacade(archParent.transform, "Workshop_Exterior_Facade", "MECHANICAL WORKSHOP",
+                    new Vector3(35f, 0f, -25f), new Vector3(22f, 8f, 18f), new Color(0.35f, 0.38f, 0.42f));
+            }
 
-            // 1. Front Gate Monument
-            CreateBuildingFacade(archParent.transform, "FrontGate_Monument", "BMU MAIN GATEWAY",
-                new Vector3(0f, 0f, 18f), new Vector3(16f, 7f, 3f), new Color(0.85f, 0.22f, 0.22f));
-
-            // 2. North Block Exterior Facade (Academic Complex)
-            CreateBuildingFacade(archParent.transform, "NorthBlock_Exterior_Facade", "NORTH BLOCK (ACADEMIC COMPLEX)",
-                new Vector3(35f, 0f, 25f), new Vector3(24f, 9f, 16f), new Color(0.68f, 0.25f, 0.22f));
-
-            // 3. Gateway Exterior Facade (Admin & Incubator)
-            CreateBuildingFacade(archParent.transform, "Gateway_Exterior_Facade", "THE GATEWAY (ADMIN & INCUBATOR)",
-                new Vector3(-35f, 0f, 25f), new Vector3(22f, 11f, 16f), new Color(0.20f, 0.38f, 0.58f));
-
-            // 4. Workshop Exterior Facade (Heavy Engineering)
-            CreateBuildingFacade(archParent.transform, "Workshop_Exterior_Facade", "MECHANICAL WORKSHOP",
-                new Vector3(35f, 0f, -25f), new Vector3(22f, 8f, 18f), new Color(0.35f, 0.38f, 0.42f));
-
-            // Reflection Probe
+            // Reflection Probe (scaled to cover halved campus)
             GameObject probeObj = new GameObject("Campus_Exterior_ReflectionProbe");
             ReflectionProbe probe = probeObj.AddComponent<ReflectionProbe>();
-            probe.size = new Vector3(150f, 40f, 150f);
+            probe.size = new Vector3(800f, 200f, 800f);
+            probe.center = new Vector3(-250f, 50f, -175f);
             probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Realtime;
 
-            // Exterior Navigation Anchors (Layer 31)
+            // Exterior Navigation Anchors (Layer 31) - Calibrated for 0.5x Scale
             GameObject anchorsParent = new GameObject("Exterior_Navigation_Anchors");
             Color anchorPadColor = new Color(0f, 0.45f, 0.85f);
 
-            CreateTeleportAnchor("Anchor_FrontGate", new Vector3(0f, 0f, 0f), Quaternion.identity, anchorsParent.transform, anchorPadColor);
-            CreateTeleportAnchor("Anchor_NorthBlock_Plaza", new Vector3(25f, 0f, 15f), Quaternion.Euler(0f, 45f, 0f), anchorsParent.transform, anchorPadColor);
-            CreateTeleportAnchor("Anchor_Gateway_Plaza", new Vector3(-25f, 0f, 15f), Quaternion.Euler(0f, -45f, 0f), anchorsParent.transform, anchorPadColor);
-            CreateTeleportAnchor("Anchor_Workshop_Plaza", new Vector3(25f, 0f, -15f), Quaternion.Euler(0f, 120f, 0f), anchorsParent.transform, anchorPadColor);
+            // 1. Initial Point / Front Gate: moved backward along entry road (+14m) looking through gate (-90° / facing -X)
+            CreateTeleportAnchor("Anchor_FrontGate", new Vector3(14.0f, 0.05f, 0f), Quaternion.Euler(0f, -90f, 0f), anchorsParent.transform, anchorPadColor);
 
-            // Safety Recovery Floor underneath
+            // 2. The Gateway (GA_GB): moved closer to building facade (-116.5m vs building at -114.9m), centered on width (Z = -87.33m)
+            CreateTeleportAnchor("Anchor_Gateway_Plaza", new Vector3(-116.5f, 0.05f, -87.33f), Quaternion.Euler(0f, -90f, 0f), anchorsParent.transform, anchorPadColor);
+
+            // 3. North Block (NB): halved scale position (X = -480.23m, Z = -127.5m), facing north into entrance (0°)
+            CreateTeleportAnchor("Anchor_NorthBlock_Plaza", new Vector3(-480.23f, 0.05f, -127.5f), Quaternion.Euler(0f, 0f, 0f), anchorsParent.transform, anchorPadColor);
+
+            // 4. Workshop (MechanicalWorkshop): halved scale position (X = -411.63m, Z = -275.0m), facing south into entrance (180°)
+            CreateTeleportAnchor("Anchor_Workshop_Plaza", new Vector3(-411.63f, 0.05f, -275.0f), Quaternion.Euler(0f, 180f, 0f), anchorsParent.transform, anchorPadColor);
+
+            // Safety Recovery Floor underneath (covers full outer campus bounds at 0.5x scale)
             GameObject safetyFloor = new GameObject("OutOfBounds_ResetFloor");
-            safetyFloor.transform.position = new Vector3(0f, -5f, 0f);
+            safetyFloor.transform.position = new Vector3(-250f, -5f, -175f);
             BoxCollider safetyCol = safetyFloor.AddComponent<BoxCollider>();
             safetyCol.isTrigger = true;
-            safetyCol.size = new Vector3(200f, 1f, 200f);
+            safetyCol.size = new Vector3(1500f, 1f, 1500f);
             safetyFloor.AddComponent<OutOfBoundsSafetyTrigger>();
 
             EditorSceneManager.SaveScene(scene, scenePath);

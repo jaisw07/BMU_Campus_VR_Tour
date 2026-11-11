@@ -112,3 +112,41 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ==============================================================================
+# OS Generated Files
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+[Tt]humbs.db
+[Tt]humbs.db:encryptable
+[Ee]hthumbs.db
+[Ee]hthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# ==============================================================================
+# IDE & Editor Configurations
+# ==============================================================================
+.idea/
+.vscode/
+*.workspace
+*.sublime-project
+*.sublime-workspace
+
+# Backups and temporary files
+*.bak
+*.swp
+*~
+
+# ==============================================================================
+# Unity VCS & Local User Overrides
+# ==============================================================================
+.plastic/
+*.private
+*.private.meta
+*.origin.meta
+
