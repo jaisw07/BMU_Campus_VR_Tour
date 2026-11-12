@@ -804,11 +804,13 @@ namespace BMU.VRTour
         {
             if (m_RoomCardsContainer == null || m_RoomCardTemplate == null) return;
 
-            // Clear previous cards except template
+            // Clear previous cards except template. Deactivate first: Destroy is deferred to end of
+            // frame, and the layout group would otherwise still lay out the old cards this frame.
             foreach (Transform child in m_RoomCardsContainer)
             {
                 if (child.gameObject != m_RoomCardTemplate)
                 {
+                    child.gameObject.SetActive(false);
                     Destroy(child.gameObject);
                 }
             }
@@ -821,10 +823,11 @@ namespace BMU.VRTour
                 GameObject cardObj = Instantiate(m_RoomCardTemplate, m_RoomCardsContainer);
                 cardObj.SetActive(true);
 
-                TextMeshProUGUI[] texts = cardObj.GetComponentsInChildren<TextMeshProUGUI>();
-                if (texts.Length > 0) texts[0].text = room.name;
-                if (texts.Length > 1) texts[1].text = room.badge;
-                if (texts.Length > 2) texts[2].text = room.description;
+                // Look texts up by name: hierarchy order puts the badge first, so index-based
+                // assignment used to put the room name inside the small badge pill.
+                SetDescendantText(cardObj.transform, "Title", room.name);
+                SetDescendantText(cardObj.transform, "Badge", room.badge);
+                SetDescendantText(cardObj.transform, "Description", room.description);
 
                 Button btn = cardObj.GetComponentInChildren<Button>();
                 if (btn != null)
@@ -942,6 +945,18 @@ namespace BMU.VRTour
             if (m_CampusHubPanel != null) m_CampusHubPanel.SetActive(m_CampusHubPanel == activePanel);
             if (m_LocationInfoPanel != null) m_LocationInfoPanel.SetActive(m_LocationInfoPanel == activePanel);
             if (m_InternalBuildingHubPanel != null) m_InternalBuildingHubPanel.SetActive(m_InternalBuildingHubPanel == activePanel);
+        }
+
+        private static void SetDescendantText(Transform root, string childName, string value)
+        {
+            foreach (TextMeshProUGUI tmp in root.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                if (tmp.name == childName)
+                {
+                    tmp.text = value;
+                    return;
+                }
+            }
         }
 
         private void UpdateHeaderLocation(string locText)

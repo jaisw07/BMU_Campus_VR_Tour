@@ -30,6 +30,24 @@ namespace BMU.VRTour.Editor
         private static readonly Color ColorGlassInactive = new Color(1f, 1f, 1f, 0.32f); // 32% Alpha inactive
         private static readonly Color ColorWhite = Color.white;
 
+        // Glass tints multiply the glass sprite's own alpha (sprite fill ~48-65%, rim ~85%).
+        // Kept well below 1 so the campus shows through; legibility comes from the text halo below.
+        private static readonly Color GlassCard = new Color(1f, 1f, 1f, 0.72f);     // main stage cards
+        private static readonly Color GlassOrnament = new Color(1f, 1f, 1f, 0.80f); // small floating controls
+        private static readonly Color GlassInner = new Color(1f, 1f, 1f, 0.50f);    // glass stacked on glass
+
+        // Body copy size: 20px = 20mm at 0.001 scale, ~11 dmm at the 1.8m follow distance (17px was too small to read in-headset).
+        private const float BodyTextSize = 20f;
+
+        // Ornaments float toward the viewer (canvas units: 1 = 1mm at 0.001 scale) for real depth.
+        private const float OrnamentDepth = -28f;
+
+        // Cylinder radius (canvas units) used to curve card rows around the viewer at 1.8m.
+        private const float CardArcRadius = 1800f;
+
+        private static readonly System.Collections.Generic.Dictionary<TMP_FontAsset, Material> s_HaloMaterials =
+            new System.Collections.Generic.Dictionary<TMP_FontAsset, Material>();
+
         // Typography Assets
         private static TMP_FontAsset s_FontSpaceGroteskBold;
         private static TMP_FontAsset s_FontSpaceGroteskMedium;
@@ -353,43 +371,26 @@ namespace BMU.VRTour.Editor
             deckRect.offsetMin = Vector2.zero;
             deckRect.offsetMax = Vector2.zero;
 
-            // Background Glass Panel
-            GameObject bgPanel = CreatePanel("GlassBackgroundPanel", deckContainer.transform, Color.white, 1400f, 850f, s_SpriteGlassPanel26);
-            bgPanel.GetComponent<RectTransform>().anchorMin = Vector2.zero;
-            bgPanel.GetComponent<RectTransform>().anchorMax = Vector2.one;
-            bgPanel.GetComponent<RectTransform>().offsetMin = Vector2.zero;
-            bgPanel.GetComponent<RectTransform>().offsetMax = Vector2.zero;
-            Image bgImg = bgPanel.GetComponent<Image>();
-            if (bgImg != null)
-            {
-                bgImg.raycastTarget = false;
-            }
+            // No full-canvas pane and no full-width bars. The stage card is the hero; brand/location,
+            // window controls and narration are small "ornaments" that float a few cm in front of it
+            // at its corners and below it, so the UI reads as spatial objects rather than a web page.
+            s_HaloMaterials.Clear();
 
             // ================================================================
-            // TOP HEADER HUD
+            // TITLE ORNAMENT (top-left): logo + university name + live location
             // ================================================================
-            GameObject header = CreatePanel("TopHeaderHUD", deckContainer.transform, Color.white, 1360f, 64f, s_SpriteGlassPanel16);
-            RectTransform headerRt = header.GetComponent<RectTransform>();
-            headerRt.anchorMin = new Vector2(0f, 1f);
-            headerRt.anchorMax = new Vector2(1f, 1f);
-            headerRt.pivot = new Vector2(0.5f, 1f);
-            headerRt.anchoredPosition = new Vector2(0f, -15f);
-            headerRt.sizeDelta = new Vector2(-40f, 64f);
-
-            // Brand Badge container with Logo and Dual-line Typography
-            GameObject brandBadge = new GameObject("HeaderBrandBadge");
-            brandBadge.transform.SetParent(header.transform, false);
-            RectTransform bbRt = brandBadge.AddComponent<RectTransform>();
-            bbRt.anchorMin = new Vector2(0f, 0.5f);
-            bbRt.anchorMax = new Vector2(0f, 0.5f);
-            bbRt.pivot = new Vector2(0f, 0.5f);
-            bbRt.anchoredPosition = new Vector2(25f, 0f);
-            bbRt.sizeDelta = new Vector2(380f, 50f);
+            GameObject titleOrnament = CreatePanel("TitleOrnament", deckContainer.transform, GlassOrnament, 470f, 54f, s_SpriteGlassPill);
+            RectTransform titleOrnRt = titleOrnament.GetComponent<RectTransform>();
+            titleOrnRt.anchorMin = new Vector2(0.5f, 1f);
+            titleOrnRt.anchorMax = new Vector2(0.5f, 1f);
+            titleOrnRt.pivot = new Vector2(0f, 1f);
+            titleOrnRt.anchoredPosition3D = new Vector3(-560f, -22f, OrnamentDepth);
+            titleOrnament.GetComponent<Image>().raycastTarget = false;
 
             if (s_SpriteLogo != null)
             {
                 GameObject logoObj = new GameObject("LogoImage");
-                logoObj.transform.SetParent(brandBadge.transform, false);
+                logoObj.transform.SetParent(titleOrnament.transform, false);
                 Image logoImg = logoObj.AddComponent<Image>();
                 logoImg.sprite = s_SpriteLogo;
                 logoImg.preserveAspect = true;
@@ -398,68 +399,59 @@ namespace BMU.VRTour.Editor
                 logoRt.anchorMin = new Vector2(0f, 0.5f);
                 logoRt.anchorMax = new Vector2(0f, 0.5f);
                 logoRt.pivot = new Vector2(0f, 0.5f);
-                logoRt.anchoredPosition = new Vector2(0f, 0f);
-                logoRt.sizeDelta = new Vector2(42f, 42f);
+                logoRt.anchoredPosition = new Vector2(14f, 0f);
+                logoRt.sizeDelta = new Vector2(34f, 34f);
             }
 
-            GameObject textCol = new GameObject("TextColumn");
-            textCol.transform.SetParent(brandBadge.transform, false);
-            RectTransform tcRt = textCol.AddComponent<RectTransform>();
-            tcRt.anchorMin = new Vector2(0f, 0.5f);
-            tcRt.anchorMax = new Vector2(0f, 0.5f);
-            tcRt.pivot = new Vector2(0f, 0.5f);
-            tcRt.anchoredPosition = new Vector2(50f, 0f);
-            tcRt.sizeDelta = new Vector2(320f, 46f);
-
-            TextMeshProUGUI brandTitle = CreateText("BrandTitle", textCol.transform, "BML MUNJAL UNIVERSITY", 14.5f, ColorNavy, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
+            TextMeshProUGUI brandTitle = CreateText("BrandTitle", titleOrnament.transform, "BML MUNJAL UNIVERSITY", 13f, ColorNavy, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
+            brandTitle.textWrappingMode = TextWrappingModes.NoWrap;
             RectTransform btRt = brandTitle.GetComponent<RectTransform>();
-            btRt.anchorMin = new Vector2(0f, 1f);
-            btRt.anchorMax = new Vector2(1f, 1f);
-            btRt.pivot = new Vector2(0f, 1f);
-            btRt.anchoredPosition = new Vector2(0f, 0f);
-            btRt.sizeDelta = new Vector2(320f, 24f);
+            btRt.anchorMin = new Vector2(0f, 0.5f);
+            btRt.anchorMax = new Vector2(1f, 0.5f);
+            btRt.pivot = new Vector2(0f, 0f);
+            btRt.anchoredPosition = new Vector2(58f, 1f);   // left inset 58, right inset 18
+            btRt.sizeDelta = new Vector2(-76f, 20f);
 
-            TextMeshProUGUI brandSub = CreateText("BrandSubtitle", textCol.transform, "VR GUIDED CAMPUS WALKTHROUGH", 10f, ColorPrimary, FontStyles.Bold, 0f, s_FontPlusJakartaSansSemiBold);
-            RectTransform bsRt = brandSub.GetComponent<RectTransform>();
-            bsRt.anchorMin = new Vector2(0f, 0f);
-            bsRt.anchorMax = new Vector2(1f, 0f);
-            bsRt.pivot = new Vector2(0f, 0f);
-            bsRt.anchoredPosition = new Vector2(0f, 2f);
-            bsRt.sizeDelta = new Vector2(320f, 18f);
-
-            // Location Chip Pill in center (Crisp white pill with navy border, centered location text, no leading dot)
-            GameObject chipPill = CreatePanel("LocationChipPill", header.transform, Color.white, 380f, 38f, s_SpriteHudChipPill != null ? s_SpriteHudChipPill : s_SpriteGlassPill);
-            RectTransform chipRt = chipPill.GetComponent<RectTransform>();
-            chipRt.anchorMin = new Vector2(0.5f, 0.5f);
-            chipRt.anchorMax = new Vector2(0.5f, 0.5f);
-            chipRt.pivot = new Vector2(0.5f, 0.5f);
-            chipRt.anchoredPosition = new Vector2(0f, -2f);
-
-            TextMeshProUGUI locText = CreateText("LocationText", chipPill.transform, "FRONT GATE • WELCOME & INTRO", 12f, ColorNavy, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
-            locText.alignment = TextAlignmentOptions.Center;
+            // Live location line (wired to CampusTourManager.m_HeaderLocationText)
+            TextMeshProUGUI locText = CreateText("LocationText", titleOrnament.transform, "FRONT GATE • WELCOME & INTRO", 10.5f, ColorAccent, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
+            locText.textWrappingMode = TextWrappingModes.NoWrap;
+            locText.overflowMode = TextOverflowModes.Ellipsis;
+            locText.enableAutoSizing = true;
+            locText.fontSizeMin = 8.5f;
+            locText.fontSizeMax = 10.5f;
             RectTransform ltRt = locText.GetComponent<RectTransform>();
-            ltRt.anchorMin = Vector2.zero;
-            ltRt.anchorMax = Vector2.one;
-            ltRt.pivot = new Vector2(0.5f, 0.5f);
-            ltRt.offsetMin = Vector2.zero;
-            ltRt.offsetMax = Vector2.zero;
+            ltRt.anchorMin = new Vector2(0f, 0.5f);
+            ltRt.anchorMax = new Vector2(1f, 0.5f);
+            ltRt.pivot = new Vector2(0f, 1f);
+            ltRt.anchoredPosition = new Vector2(58f, -1f);
+            ltRt.sizeDelta = new Vector2(-76f, 18f);
 
-            // --- Top-Right Header Cluster: [Recenter UI] -> [Restart] -> [Move (+)] -> [Minimize (-)] ---
+            // ================================================================
+            // CONTROLS ORNAMENT (top-right): [Recenter] [Restart] [Move] [Minimize]
+            // ================================================================
+            GameObject controlsOrnament = CreatePanel("ControlsOrnament", deckContainer.transform, GlassOrnament, 276f, 54f, s_SpriteGlassPill);
+            RectTransform ctrlOrnRt = controlsOrnament.GetComponent<RectTransform>();
+            ctrlOrnRt.anchorMin = new Vector2(0.5f, 1f);
+            ctrlOrnRt.anchorMax = new Vector2(0.5f, 1f);
+            ctrlOrnRt.pivot = new Vector2(1f, 1f);
+            ctrlOrnRt.anchoredPosition3D = new Vector3(560f, -22f, OrnamentDepth);
+            controlsOrnament.GetComponent<Image>().raycastTarget = false;
+
             // 1. Minimize Icon Button (- Icon)
-            Button btnHeaderMinimize = CreateIconButton("BtnHeaderMinimize", header.transform, s_SpriteMinimizeDash, Color.white, ColorNavy, 40f, s_SpriteGlassCircle, "Minimize to 360° Dock");
+            Button btnHeaderMinimize = CreateIconButton("BtnHeaderMinimize", controlsOrnament.transform, s_SpriteMinimizeDash, Color.white, ColorNavy, 38f, s_SpriteGlassCircle, "Minimize to Dock");
             RectTransform minRt = btnHeaderMinimize.GetComponent<RectTransform>();
             minRt.anchorMin = new Vector2(1f, 0.5f);
             minRt.anchorMax = new Vector2(1f, 0.5f);
             minRt.pivot = new Vector2(1f, 0.5f);
-            minRt.anchoredPosition = new Vector2(-20f, 0f);
+            minRt.anchoredPosition = new Vector2(-8f, 0f);
 
             // 2. Drag to Move Icon Button (+ Directional Move Icon)
-            Button btnHeaderDragMove = CreateIconButton("BtnHeaderDragMove", header.transform, s_SpriteMoveDirectional, Color.white, ColorNavy, 40f, s_SpriteGlassCircle, "Drag to Move");
+            Button btnHeaderDragMove = CreateIconButton("BtnHeaderDragMove", controlsOrnament.transform, s_SpriteMoveDirectional, Color.white, ColorNavy, 38f, s_SpriteGlassCircle, "Drag to Move");
             RectTransform dragRt = btnHeaderDragMove.GetComponent<RectTransform>();
             dragRt.anchorMin = new Vector2(1f, 0.5f);
             dragRt.anchorMax = new Vector2(1f, 0.5f);
             dragRt.pivot = new Vector2(1f, 0.5f);
-            dragRt.anchoredPosition = new Vector2(-70f, 0f);
+            dragRt.anchoredPosition = new Vector2(-54f, 0f);
 
             var dragHandle = btnHeaderDragMove.gameObject.AddComponent<VRUIDraggableHandle>();
             SetPrivateField(dragHandle, "m_UIRoot", uiRoot.transform);
@@ -467,20 +459,20 @@ namespace BMU.VRTour.Editor
             SetPrivateField(dragHandle, "m_HandleImage", btnHeaderDragMove.GetComponent<Image>());
 
             // 3. Restart Tour Icon Button (Circular Loop Arrow)
-            Button btnRestart = CreateIconButton("BtnHeaderRestart", header.transform, s_SpriteRestartTour, Color.white, ColorAccent, 40f, s_SpriteGlassCircle, "Restart Tour");
+            Button btnRestart = CreateIconButton("BtnHeaderRestart", controlsOrnament.transform, s_SpriteRestartTour, Color.white, ColorAccent, 38f, s_SpriteGlassCircle, "Restart Tour");
             RectTransform restartRt = btnRestart.GetComponent<RectTransform>();
             restartRt.anchorMin = new Vector2(1f, 0.5f);
             restartRt.anchorMax = new Vector2(1f, 0.5f);
             restartRt.pivot = new Vector2(1f, 0.5f);
-            restartRt.anchoredPosition = new Vector2(-120f, 0f);
+            restartRt.anchoredPosition = new Vector2(-100f, 0f);
 
             // 4. Recenter UI Pill Button
-            Button btnRecenter = CreateButton("BtnRecenterUI", header.transform, "Recenter UI", ColorNavy, 130f, 38f, 13.5f, s_SpriteRoundedRect12, s_FontPlusJakartaSansBold);
+            Button btnRecenter = CreateButton("BtnRecenterUI", controlsOrnament.transform, "Recenter", ColorNavy, 120f, 36f, 13f, s_SpriteRoundedRect12, s_FontPlusJakartaSansBold);
             RectTransform recRt = btnRecenter.GetComponent<RectTransform>();
             recRt.anchorMin = new Vector2(1f, 0.5f);
             recRt.anchorMax = new Vector2(1f, 0.5f);
             recRt.pivot = new Vector2(1f, 0.5f);
-            recRt.anchoredPosition = new Vector2(-175f, 0f);
+            recRt.anchoredPosition = new Vector2(-146f, 0f);
 
             // ================================================================
             // STAGE 1: INTRO 3D CAROUSEL PANEL
@@ -490,11 +482,11 @@ namespace BMU.VRTour.Editor
             RectTransform introRt = introPanel.AddComponent<RectTransform>();
             introRt.anchorMin = Vector2.zero;
             introRt.anchorMax = Vector2.one;
-            introRt.offsetMin = new Vector2(20f, 95f);
-            introRt.offsetMax = new Vector2(-20f, -85f);
+            introRt.offsetMin = new Vector2(20f, 100f); // clear of the narration ornament
+            introRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
 
             // Carousel Card (High Fidelity 1120 x 540 with 50% alpha acrylic glass)
-            GameObject cardObj = CreatePanel("CarouselSlideCard", introPanel.transform, Color.white, 1120f, 540f, s_SpriteGlassPanel26);
+            GameObject cardObj = CreatePanel("CarouselSlideCard", introPanel.transform, GlassCard, 1120f, 540f, s_SpriteGlassPanel26);
             RectTransform cardRt = cardObj.GetComponent<RectTransform>();
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -521,33 +513,20 @@ namespace BMU.VRTour.Editor
             TextMeshProUGUI slideBadge = CreateText("SlideBadge", badgePill.transform, "HERO GROUP LEGACY", 11.5f, ColorPrimary, FontStyles.Bold, 0f, s_FontPlusJakartaSansBold);
             slideBadge.alignment = TextAlignmentOptions.Center;
             SetFullStretch(slideBadge.GetComponent<RectTransform>());
+            MakePillFitText(badgePill, slideBadge, 14);
 
-            // Slide Title (Spaced 10px below badge)
-            TextMeshProUGUI slideTitle = CreateText("SlideTitle", leftContainer.transform, "Welcome to BML Munjal University", 30f, ColorNavy, FontStyles.Bold);
-            RectTransform titleRt = slideTitle.GetComponent<RectTransform>();
-            titleRt.anchorMin = new Vector2(0f, 1f);
-            titleRt.anchorMax = new Vector2(1f, 1f);
-            titleRt.pivot = new Vector2(0f, 1f);
-            titleRt.anchoredPosition = new Vector2(50f, -68f);
-            titleRt.sizeDelta = new Vector2(-70f, 52f);
+            // Title / description / stats stack: a VerticalLayoutGroup sizes each block to its
+            // wrapped text, so a 2-line title pushes the description down instead of overlapping it.
+            GameObject slideTextStack = CreateTextStack("SlideTextStack", leftContainer.transform, 14f);
+            RectTransform stackRt = slideTextStack.GetComponent<RectTransform>();
+            stackRt.anchorMin = Vector2.zero;
+            stackRt.anchorMax = Vector2.one;
+            stackRt.offsetMin = new Vector2(50f, 88f);   // stays above slide index + skip button
+            stackRt.offsetMax = new Vector2(-20f, -70f); // starts below the badge pill
 
-            // Slide Description (Spaced 15px below title, 18pt font with 16% line spacing)
-            TextMeshProUGUI slideDesc = CreateText("SlideDesc", leftContainer.transform, "Description text goes here...", 18f, ColorNavy, FontStyles.Normal, 16f);
-            RectTransform descRt = slideDesc.GetComponent<RectTransform>();
-            descRt.anchorMin = new Vector2(0f, 1f);
-            descRt.anchorMax = new Vector2(1f, 1f);
-            descRt.pivot = new Vector2(0f, 1f);
-            descRt.anchoredPosition = new Vector2(50f, -135f);
-            descRt.sizeDelta = new Vector2(-70f, 115f);
-
-            // Slide Stats (Spaced 18px below description, 17pt font with 20% line spacing)
-            TextMeshProUGUI slideStats = CreateText("SlideStats", leftContainer.transform, "• Founded by Hero Group\n• Mentored by Imperial College London\n• Experiential 3-2-1 Curriculum", 17f, ColorPrimary, FontStyles.Bold, 20f);
-            RectTransform statsRt = slideStats.GetComponent<RectTransform>();
-            statsRt.anchorMin = new Vector2(0f, 1f);
-            statsRt.anchorMax = new Vector2(1f, 1f);
-            statsRt.pivot = new Vector2(0f, 1f);
-            statsRt.anchoredPosition = new Vector2(50f, -265f);
-            statsRt.sizeDelta = new Vector2(-70f, 130f);
+            TextMeshProUGUI slideTitle = CreateText("SlideTitle", slideTextStack.transform, "Welcome to BML Munjal University", 28f, ColorNavy, FontStyles.Bold);
+            TextMeshProUGUI slideDesc = CreateText("SlideDesc", slideTextStack.transform, "Description text goes here...", BodyTextSize, ColorNavy, FontStyles.Normal, 14f, s_FontPlusJakartaSansSemiBold);
+            TextMeshProUGUI slideStats = CreateText("SlideStats", slideTextStack.transform, "• Founded by Hero Group\n• Mentored by Imperial College London\n• Experiential 3-2-1 Curriculum", 18f, ColorPrimary, FontStyles.Bold, 18f, s_FontPlusJakartaSansBold);
 
             // Slide Index (Bottom-Left inside LeftContainer, strictly bounded)
             TextMeshProUGUI slideIndex = CreateText("SlideIndex", leftContainer.transform, "SLIDE 1 OF 5", 16f, ColorAccent, FontStyles.Bold);
@@ -581,6 +560,11 @@ namespace BMU.VRTour.Editor
             CreatePolaroidPlaceholder("Polaroid_C", rightContainer.transform, new Vector2(260f, 180f), new Vector2(-55f, -95f), -1.8f, "ACADEMIC CAMPUS SKYLINE", s_PhotoSlide1_Skyline, out Image imgC, out TextMeshProUGUI capC);
             CreatePolaroidPlaceholder("Polaroid_B", rightContainer.transform, new Vector2(285f, 200f), new Vector2(65f, 5f), 2.8f, "STUDENT COLLABORATIVE QUAD", s_PhotoSlide1_Quad, out Image imgB, out TextMeshProUGUI capB);
 
+            // Stagger the polaroids in depth so the collage has real parallax in the headset
+            SetDepth(imgA.transform.parent, -10f);
+            SetDepth(imgC.transform.parent, -6f);
+            SetDepth(imgB.transform.parent, -18f);
+
             Image[] polaroidImages = new Image[] { imgA, imgB, imgC };
             TextMeshProUGUI[] polaroidCaptions = new TextMeshProUGUI[] { capA, capB, capC };
 
@@ -590,7 +574,7 @@ namespace BMU.VRTour.Editor
             prevRt.anchorMin = new Vector2(0f, 0.5f);
             prevRt.anchorMax = new Vector2(0f, 0.5f);
             prevRt.pivot = new Vector2(0.5f, 0.5f);
-            prevRt.anchoredPosition = new Vector2(50f, 0f);
+            prevRt.anchoredPosition3D = new Vector3(50f, 0f, OrnamentDepth);
             if (s_SpriteArrowLeft != null)
             {
                 GameObject icon = new GameObject("Icon");
@@ -609,7 +593,7 @@ namespace BMU.VRTour.Editor
             nextRt.anchorMin = new Vector2(1f, 0.5f);
             nextRt.anchorMax = new Vector2(1f, 0.5f);
             nextRt.pivot = new Vector2(0.5f, 0.5f);
-            nextRt.anchoredPosition = new Vector2(-50f, 0f);
+            nextRt.anchoredPosition3D = new Vector3(-50f, 0f, OrnamentDepth);
             if (s_SpriteArrowRight != null)
             {
                 GameObject icon = new GameObject("Icon");
@@ -631,11 +615,19 @@ namespace BMU.VRTour.Editor
             RectTransform hubRt = hubPanel.AddComponent<RectTransform>();
             hubRt.anchorMin = Vector2.zero;
             hubRt.anchorMax = Vector2.one;
-            hubRt.offsetMin = new Vector2(20f, 95f);
-            hubRt.offsetMax = new Vector2(-20f, -85f);
+            hubRt.offsetMin = new Vector2(20f, 100f); // clear of the narration ornament
+            hubRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
 
-            // Hub Heading
-            TextMeshProUGUI hubTitle = CreateText("HubTitle", hubPanel.transform, "Select a Destination to Begin Tour", 32f, ColorNavy, FontStyles.Bold);
+            // Hub Heading (own glass card, since there is no background pane behind it)
+            GameObject hubHeadingCard = CreatePanel("HubHeadingCard", hubPanel.transform, GlassCard, 1060f, 100f, s_SpriteGlassPanel16);
+            RectTransform hubHeadingRt = hubHeadingCard.GetComponent<RectTransform>();
+            hubHeadingRt.anchorMin = new Vector2(0.5f, 1f);
+            hubHeadingRt.anchorMax = new Vector2(0.5f, 1f);
+            hubHeadingRt.pivot = new Vector2(0.5f, 1f);
+            hubHeadingRt.anchoredPosition = new Vector2(0f, -4f);
+            hubHeadingCard.GetComponent<Image>().raycastTarget = false;
+
+            TextMeshProUGUI hubTitle = CreateText("HubTitle", hubHeadingCard.transform, "Select a Destination to Begin Tour", 32f, ColorNavy, FontStyles.Bold);
             hubTitle.alignment = TextAlignmentOptions.Center;
             RectTransform hubTitleRt = hubTitle.GetComponent<RectTransform>();
             hubTitleRt.anchorMin = new Vector2(0.5f, 1f);
@@ -644,13 +636,13 @@ namespace BMU.VRTour.Editor
             hubTitleRt.anchoredPosition = new Vector2(0f, -10f);
             hubTitleRt.sizeDelta = new Vector2(1000f, 45f);
 
-            TextMeshProUGUI hubSubtitle = CreateText("HubSubtitle", hubPanel.transform, "Choose one of the 3 primary university facilities to teleport directly to its exterior plaza.", 17f, ColorAccent, FontStyles.Normal);
+            TextMeshProUGUI hubSubtitle = CreateText("HubSubtitle", hubHeadingCard.transform, "Choose one of the 3 primary university facilities to teleport directly to its exterior plaza.", 18f, ColorPrimary, FontStyles.Normal, 0f, s_FontPlusJakartaSansSemiBold);
             hubSubtitle.alignment = TextAlignmentOptions.Center;
             RectTransform hubSubRt = hubSubtitle.GetComponent<RectTransform>();
             hubSubRt.anchorMin = new Vector2(0.5f, 1f);
             hubSubRt.anchorMax = new Vector2(0.5f, 1f);
             hubSubRt.pivot = new Vector2(0.5f, 1f);
-            hubSubRt.anchoredPosition = new Vector2(0f, -62f);
+            hubSubRt.anchoredPosition = new Vector2(0f, -58f);
             hubSubRt.sizeDelta = new Vector2(1000f, 30f);
 
             // 3 Destination Cards
@@ -660,12 +652,7 @@ namespace BMU.VRTour.Editor
             cardsRt.anchorMin = new Vector2(0.5f, 0.44f);
             cardsRt.anchorMax = new Vector2(0.5f, 0.44f);
             cardsRt.sizeDelta = new Vector2(1280f, 440f);
-
-            HorizontalLayoutGroup cardLayout = cardsContainer.AddComponent<HorizontalLayoutGroup>();
-            cardLayout.spacing = 25f;
-            cardLayout.childAlignment = TextAnchor.MiddleCenter;
-            cardLayout.childForceExpandWidth = true;
-            cardLayout.childForceExpandHeight = true;
+            ConfigureCardRow(cardsContainer, 28f);
 
             // Card 1: North Block
             GameObject card1 = CreateBuildingCard("Card_NorthBlock", cardsContainer.transform, "ACADEMIC HUB", "North Block Building", "School of Engineering & Tech, Management, AI labs, and faculty suites.", "Teleport Outside →", ColorPrimary, out Button btnNorthBlock);
@@ -682,11 +669,11 @@ namespace BMU.VRTour.Editor
             RectTransform locPanelRt = locPanel.AddComponent<RectTransform>();
             locPanelRt.anchorMin = Vector2.zero;
             locPanelRt.anchorMax = Vector2.one;
-            locPanelRt.offsetMin = new Vector2(20f, 95f);
-            locPanelRt.offsetMax = new Vector2(-20f, -85f);
+            locPanelRt.offsetMin = new Vector2(20f, 100f); // clear of the narration ornament
+            locPanelRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
 
             // Glass Card for Location Info
-            GameObject locCard = CreatePanel("LocInfoCard", locPanel.transform, Color.white, 1120f, 540f, s_SpriteGlassPanel26);
+            GameObject locCard = CreatePanel("LocInfoCard", locPanel.transform, GlassCard, 1120f, 540f, s_SpriteGlassPanel26);
             RectTransform lcRt = locCard.GetComponent<RectTransform>();
             lcRt.anchorMin = new Vector2(0.5f, 0.5f);
             lcRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -704,46 +691,32 @@ namespace BMU.VRTour.Editor
             TextMeshProUGUI locZone = CreateText("LocZoneTag", zonePill.transform, "ACADEMIC COMPLEX (EXTERIOR)", 11.5f, ColorRed, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
             locZone.alignment = TextAlignmentOptions.Center;
             SetFullStretch(locZone.GetComponent<RectTransform>());
+            MakePillFitText(zonePill, locZone, 14);
 
-            // Heading (Building Name) - Left column constrained to 520px
-            TextMeshProUGUI locHeading = CreateText("LocHeading", locCard.transform, "North Block Academic Building", 32f, ColorNavy, FontStyles.Bold);
-            locHeading.textWrappingMode = TextWrappingModes.Normal;
-            RectTransform lhRt = locHeading.GetComponent<RectTransform>();
-            lhRt.anchorMin = new Vector2(0f, 1f);
-            lhRt.anchorMax = new Vector2(0f, 1f);
-            lhRt.pivot = new Vector2(0f, 1f);
-            lhRt.anchoredPosition = new Vector2(50f, -60f);
-            lhRt.sizeDelta = new Vector2(520f, 48f);
+            // Heading / summary / features stack in the 520px left column. Stacking by preferred
+            // height stops long headings (e.g. "Mechanical Workshop & Vehicle Hangar") or 6-line
+            // summaries from running into the block below.
+            GameObject locTextStack = CreateTextStack("LocTextStack", locCard.transform, 14f);
+            RectTransform locStackRt = locTextStack.GetComponent<RectTransform>();
+            locStackRt.anchorMin = new Vector2(0f, 0f);
+            locStackRt.anchorMax = new Vector2(0f, 1f);
+            locStackRt.pivot = new Vector2(0f, 1f);
+            locStackRt.offsetMin = new Vector2(50f, 100f);   // stays above the "Go Inside" button
+            locStackRt.offsetMax = new Vector2(630f, -62f);  // 580px wide, below the zone pill
 
-            // Summary - Left column constrained to 520px
-            TextMeshProUGUI locSummary = CreateText("LocSummary", locCard.transform, "Location summary paragraph text...", 18f, ColorNavy, FontStyles.Normal, 16f);
-            locSummary.textWrappingMode = TextWrappingModes.Normal;
-            RectTransform lsRt = locSummary.GetComponent<RectTransform>();
-            lsRt.anchorMin = new Vector2(0f, 1f);
-            lsRt.anchorMax = new Vector2(0f, 1f);
-            lsRt.pivot = new Vector2(0f, 1f);
-            lsRt.anchoredPosition = new Vector2(50f, -144f);
-            lsRt.sizeDelta = new Vector2(520f, 125f);
-
-            // Features List - Left column constrained to 520px
-            TextMeshProUGUI locFeatures = CreateText("LocFeaturesList", locCard.transform, "• Feature bullet point 1\n• Feature bullet point 2", 17f, ColorPrimary, FontStyles.Bold, 20f);
-            locFeatures.textWrappingMode = TextWrappingModes.Normal;
-            RectTransform lfRt = locFeatures.GetComponent<RectTransform>();
-            lfRt.anchorMin = new Vector2(0f, 1f);
-            lfRt.anchorMax = new Vector2(0f, 1f);
-            lfRt.pivot = new Vector2(0f, 1f);
-            lfRt.anchoredPosition = new Vector2(50f, -295f);
-            lfRt.sizeDelta = new Vector2(520f, 140f);
+            TextMeshProUGUI locHeading = CreateText("LocHeading", locTextStack.transform, "North Block Academic Building", 30f, ColorNavy, FontStyles.Bold);
+            TextMeshProUGUI locSummary = CreateText("LocSummary", locTextStack.transform, "Location summary paragraph text...", BodyTextSize, ColorNavy, FontStyles.Normal, 14f, s_FontPlusJakartaSansSemiBold);
+            TextMeshProUGUI locFeatures = CreateText("LocFeaturesList", locTextStack.transform, "• Feature bullet point 1\n• Feature bullet point 2", 18f, ColorPrimary, FontStyles.Bold, 18f, s_FontPlusJakartaSansBold);
 
             // Right Photo Card with Unsplash Photo (Width 460px with 40px clear gutter)
-            GameObject photoCard = CreatePanel("PhotoCard", locCard.transform, Color.white, 460f, 430f, s_SpriteGlassPanel16);
+            GameObject photoCard = CreatePanel("PhotoCard", locCard.transform, GlassInner, 400f, 400f, s_SpriteGlassPanel16);
             RectTransform pcRt = photoCard.GetComponent<RectTransform>();
             pcRt.anchorMin = new Vector2(1f, 0.5f);
             pcRt.anchorMax = new Vector2(1f, 0.5f);
             pcRt.pivot = new Vector2(1f, 0.5f);
-            pcRt.anchoredPosition = new Vector2(-50f, 25f);
+            pcRt.anchoredPosition3D = new Vector3(-50f, 25f, -12f); // photo lifts slightly off the card
 
-            GameObject locPhotoArea = CreatePanel("PhotoArea", photoCard.transform, Color.white, 430f, 310f, s_SpriteRoundedRect8);
+            GameObject locPhotoArea = CreatePanel("PhotoArea", photoCard.transform, Color.white, 370f, 285f, s_SpriteRoundedRect8);
             RectTransform paRt = locPhotoArea.GetComponent<RectTransform>();
             paRt.anchorMin = new Vector2(0.5f, 1f);
             paRt.anchorMax = new Vector2(0.5f, 1f);
@@ -791,42 +764,52 @@ namespace BMU.VRTour.Editor
             RectTransform inRt = internalPanel.AddComponent<RectTransform>();
             inRt.anchorMin = Vector2.zero;
             inRt.anchorMax = Vector2.one;
-            inRt.offsetMin = new Vector2(20f, 95f);
-            inRt.offsetMax = new Vector2(-20f, -85f);
+            inRt.offsetMin = new Vector2(20f, 100f); // clear of the narration ornament
+            inRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
 
-            Button btnBackPlaza = CreateButton("BtnBackToPlaza", internalPanel.transform, "← Back to Exterior Plaza", ColorAccent, 250f, 42f, 13.5f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
+            // Heading card: [← Back to Plaza]  tag + title  [Campus Hub →] on one glass card
+            GameObject inHeadingCard = CreatePanel("InternalHeadingCard", internalPanel.transform, GlassCard, 1200f, 106f, s_SpriteGlassPanel16);
+            RectTransform inHeadingRt = inHeadingCard.GetComponent<RectTransform>();
+            inHeadingRt.anchorMin = new Vector2(0.5f, 1f);
+            inHeadingRt.anchorMax = new Vector2(0.5f, 1f);
+            inHeadingRt.pivot = new Vector2(0.5f, 1f);
+            inHeadingRt.anchoredPosition = new Vector2(0f, -4f);
+            inHeadingCard.GetComponent<Image>().raycastTarget = false;
+
+            Button btnBackPlaza = CreateButton("BtnBackToPlaza", inHeadingCard.transform, "← Back to Exterior Plaza", ColorAccent, 250f, 42f, 13.5f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
             RectTransform bbpRt = btnBackPlaza.GetComponent<RectTransform>();
-            bbpRt.anchorMin = new Vector2(0f, 1f);
-            bbpRt.anchorMax = new Vector2(0f, 1f);
-            bbpRt.pivot = new Vector2(0f, 1f);
-            bbpRt.anchoredPosition = new Vector2(50f, -25f);
+            bbpRt.anchorMin = new Vector2(0f, 0.5f);
+            bbpRt.anchorMax = new Vector2(0f, 0.5f);
+            bbpRt.pivot = new Vector2(0f, 0.5f);
+            bbpRt.anchoredPosition = new Vector2(24f, 0f);
 
-            Button btnBackHub = CreateButton("BtnBackToCampusHub", internalPanel.transform, "Campus Hub →", ColorNavy, 170f, 42f, 13.5f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
+            Button btnBackHub = CreateButton("BtnBackToCampusHub", inHeadingCard.transform, "Campus Hub →", ColorNavy, 170f, 42f, 13.5f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
             RectTransform bbhRt = btnBackHub.GetComponent<RectTransform>();
-            bbhRt.anchorMin = new Vector2(1f, 1f);
-            bbhRt.anchorMax = new Vector2(1f, 1f);
-            bbhRt.pivot = new Vector2(1f, 1f);
-            bbhRt.anchoredPosition = new Vector2(-50f, -25f);
+            bbhRt.anchorMin = new Vector2(1f, 0.5f);
+            bbhRt.anchorMax = new Vector2(1f, 0.5f);
+            bbhRt.pivot = new Vector2(1f, 0.5f);
+            bbhRt.anchoredPosition = new Vector2(-24f, 0f);
 
-            GameObject inTagPill = CreatePanel("InternalTagPill", internalPanel.transform, new Color(0f, 0.17f, 0.29f, 0.08f), 340f, 30f, s_SpriteGlassPill);
+            GameObject inTagPill = CreatePanel("InternalTagPill", inHeadingCard.transform, new Color(0f, 0.17f, 0.29f, 0.08f), 340f, 30f, s_SpriteGlassPill);
             RectTransform inTagRt = inTagPill.GetComponent<RectTransform>();
             inTagRt.anchorMin = new Vector2(0.5f, 1f);
             inTagRt.anchorMax = new Vector2(0.5f, 1f);
             inTagRt.pivot = new Vector2(0.5f, 1f);
-            inTagRt.anchoredPosition = new Vector2(0f, -25f);
+            inTagRt.anchoredPosition = new Vector2(0f, -14f);
 
             TextMeshProUGUI inTag = CreateText("InternalHubTag", inTagPill.transform, "NORTH BLOCK • INTERIOR SPACES", 11.5f, ColorRed, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
             inTag.alignment = TextAlignmentOptions.Center;
             SetFullStretch(inTag.GetComponent<RectTransform>());
+            MakePillFitText(inTagPill, inTag, 16);
 
-            TextMeshProUGUI inTitle = CreateText("InternalHubTitle", internalPanel.transform, "Select an Interior Facility to Enter", 30f, ColorNavy, FontStyles.Bold);
+            TextMeshProUGUI inTitle = CreateText("InternalHubTitle", inHeadingCard.transform, "Select an Interior Facility to Enter", 30f, ColorNavy, FontStyles.Bold);
             inTitle.alignment = TextAlignmentOptions.Center;
             RectTransform inTitRt = inTitle.GetComponent<RectTransform>();
             inTitRt.anchorMin = new Vector2(0.5f, 1f);
             inTitRt.anchorMax = new Vector2(0.5f, 1f);
             inTitRt.pivot = new Vector2(0.5f, 1f);
-            inTitRt.anchoredPosition = new Vector2(0f, -62f);
-            inTitRt.sizeDelta = new Vector2(800f, 40f);
+            inTitRt.anchoredPosition = new Vector2(0f, -52f);
+            inTitRt.sizeDelta = new Vector2(600f, 40f);
 
             // Container for dynamic room cards
             GameObject roomCardsContainer = new GameObject("RoomCardsContainer");
@@ -834,34 +817,32 @@ namespace BMU.VRTour.Editor
             RectTransform rccRt = roomCardsContainer.AddComponent<RectTransform>();
             rccRt.anchorMin = new Vector2(0.5f, 0.40f);
             rccRt.anchorMax = new Vector2(0.5f, 0.40f);
-            rccRt.sizeDelta = new Vector2(1280f, 380f);
-
-            HorizontalLayoutGroup rccLayout = roomCardsContainer.AddComponent<HorizontalLayoutGroup>();
-            rccLayout.spacing = 25f;
-            rccLayout.childAlignment = TextAnchor.MiddleCenter;
-            rccLayout.childForceExpandWidth = true;
-            rccLayout.childForceExpandHeight = true;
+            rccRt.sizeDelta = new Vector2(1280f, 430f);
+            ConfigureCardRow(roomCardsContainer, 28f);
 
             // Template room card
             GameObject templateCard = CreateBuildingCard("RoomCardTemplate", roomCardsContainer.transform, "BADGE", "Room Name", "Room description...", "Enter 360 Room →", ColorPrimary, out Button btnTemplate);
             templateCard.SetActive(false);
 
             // ================================================================
-            // BOTTOM AUDIO VOICEOVER HUD
+            // NARRATION ORNAMENT (bottom-centre): speaker + waveform + 2-line caption
             // ================================================================
-            GameObject audioHud = CreatePanel("BottomAudioVoiceoverHUD", deckContainer.transform, Color.white, 1360f, 65f, s_SpriteGlassPanel16);
+            // Narrower than the card and floating in front of it, like a subtitle capsule.
+            GameObject audioHud = CreatePanel("NarrationOrnament", deckContainer.transform, GlassOrnament, 760f, 60f, s_SpriteGlassPill);
             RectTransform audioRt = audioHud.GetComponent<RectTransform>();
-            audioRt.anchorMin = new Vector2(0f, 0f);
-            audioRt.anchorMax = new Vector2(1f, 0f);
+            audioRt.anchorMin = new Vector2(0.5f, 0f);
+            audioRt.anchorMax = new Vector2(0.5f, 0f);
             audioRt.pivot = new Vector2(0.5f, 0f);
-            audioRt.anchoredPosition = new Vector2(0f, 15f);
-            audioRt.sizeDelta = new Vector2(-40f, 65f);
+            audioRt.anchoredPosition3D = new Vector3(0f, 22f, OrnamentDepth);
+            audioRt.sizeDelta = new Vector2(760f, 60f);
+            audioHud.GetComponent<Image>().raycastTarget = false;
 
-            Button btnAudioToggle = CreateButton("BtnAudioToggle", audioHud.transform, "", ColorPrimary, 44f, 44f, 16f, s_SpriteGlassCircle);
+            Button btnAudioToggle = CreateButton("BtnAudioToggle", audioHud.transform, "", ColorPrimary, 40f, 40f, 16f, s_SpriteGlassCircle);
             RectTransform batRt = btnAudioToggle.GetComponent<RectTransform>();
-            batRt.anchorMin = new Vector2(0.02f, 0.5f);
-            batRt.anchorMax = new Vector2(0.02f, 0.5f);
+            batRt.anchorMin = new Vector2(0f, 0.5f);
+            batRt.anchorMax = new Vector2(0f, 0.5f);
             batRt.pivot = new Vector2(0f, 0.5f);
+            batRt.anchoredPosition = new Vector2(12f, 0f);
 
             GameObject speakerOn = new GameObject("SpeakerIconOn");
             speakerOn.transform.SetParent(btnAudioToggle.transform, false);
@@ -888,10 +869,11 @@ namespace BMU.VRTour.Editor
             GameObject waveformContainer = new GameObject("WaveformBars");
             waveformContainer.transform.SetParent(audioHud.transform, false);
             RectTransform wcRt = waveformContainer.AddComponent<RectTransform>();
-            wcRt.anchorMin = new Vector2(0.08f, 0.5f);
-            wcRt.anchorMax = new Vector2(0.08f, 0.5f);
+            wcRt.anchorMin = new Vector2(0f, 0.5f);
+            wcRt.anchorMax = new Vector2(0f, 0.5f);
             wcRt.pivot = new Vector2(0f, 0.5f);
-            wcRt.sizeDelta = new Vector2(70f, 40f);
+            wcRt.anchoredPosition = new Vector2(62f, 0f);
+            wcRt.sizeDelta = new Vector2(56f, 34f);
 
             HorizontalLayoutGroup waveLayout = waveformContainer.AddComponent<HorizontalLayoutGroup>();
             waveLayout.spacing = 5f;
@@ -914,15 +896,22 @@ namespace BMU.VRTour.Editor
             }
 
             // Caption speech bubble text: Pure black (#000000) when active as specified in Feature 2
-            TextMeshProUGUI captionText = CreateText("CaptionText", audioHud.transform, "\"Welcome to BML Munjal University. Founded by the Hero Group...\"", 16f, Color.black, FontStyles.Italic);
+            // Fixed size (no auto-size: the narrator types captions out letter by letter), wraps to
+            // 2 lines (~150 chars) in 600px; anything longer ends in an ellipsis instead of spilling.
+            TextMeshProUGUI captionText = CreateText("CaptionText", audioHud.transform, "\"Welcome to BML Munjal University. Founded by the Hero Group...\"", 15f, ColorNavy, FontStyles.Italic, 0f, s_FontPlusJakartaSansSemiBold);
+            captionText.alignment = TextAlignmentOptions.MidlineLeft;
+            captionText.textWrappingMode = TextWrappingModes.Normal;
+            captionText.overflowMode = TextOverflowModes.Ellipsis;
             RectTransform ctRt = captionText.GetComponent<RectTransform>();
-            ctRt.anchorMin = new Vector2(0.16f, 0.5f);
-            ctRt.anchorMax = new Vector2(0.98f, 0.5f);
+            ctRt.anchorMin = new Vector2(0f, 0.5f);
+            ctRt.anchorMax = new Vector2(1f, 0.5f);
             ctRt.pivot = new Vector2(0f, 0.5f);
-            ctRt.sizeDelta = new Vector2(0f, 45f);
+            ctRt.anchoredPosition = new Vector2(134f, 0f);   // left inset 134, right inset 24
+            ctRt.sizeDelta = new Vector2(-158f, 46f);
 
             TourAudioNarrator narrator = uiRoot.AddComponent<TourAudioNarrator>();
             SetPrivateField(narrator, "m_CaptionText", captionText);
+            SetPrivateField(narrator, "m_ActiveCaptionColor", ColorNavy);
             SetPrivateField(narrator, "m_AudioToggleButton", btnAudioToggle);
             SetPrivateField(narrator, "m_ToggleButtonText", btnAudioToggle.GetComponentInChildren<TextMeshProUGUI>());
             SetPrivateField(narrator, "m_ToggleButtonImage", btnAudioToggle.GetComponent<Image>());
@@ -933,63 +922,48 @@ namespace BMU.VRTour.Editor
             // ================================================================
             // MINIMIZED DOCK ORB
             // ================================================================
+            // Parked top-right of the view (~17° right, ~9° above eye level at 1.8m). The UI root keeps
+            // lazy-following while minimized, so the orb stays in the top-right periphery.
             GameObject dockOrbRoot = new GameObject("DockOrbRoot");
             dockOrbRoot.transform.SetParent(uiRoot.transform, false);
-            dockOrbRoot.transform.localPosition = new Vector3(0f, -0.45f, 1.4f);
+            dockOrbRoot.transform.localPosition = new Vector3(0.55f, 0.42f, 0f);
 
-            // 3D Visual Sphere for Orb
+            // Visual container: MinimizedDockOrb scales this from 0 -> 1, so everything lives under it
+            GameObject orbVisual = new GameObject("DockOrbVisual");
+            orbVisual.transform.SetParent(dockOrbRoot.transform, false);
+
+            // Glossy 3D bead behind the badge (its rim shows around the logo)
             GameObject orbSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            orbSphere.name = "DockOrbVisual";
-            orbSphere.transform.SetParent(dockOrbRoot.transform, false);
-            orbSphere.transform.localScale = Vector3.one * 0.22f;
+            orbSphere.name = "OrbBead";
+            orbSphere.transform.SetParent(orbVisual.transform, false);
+            orbSphere.transform.localScale = Vector3.one * 0.09f;
+            Collider beadCol = orbSphere.GetComponent<Collider>();
+            if (beadCol != null) UnityEngine.Object.DestroyImmediate(beadCol);
 
             MeshRenderer orbRend = orbSphere.GetComponent<MeshRenderer>();
             orbRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             orbRend.receiveShadows = false;
-
-            string matPath = "Assets/Materials/DockOrbMaterial.mat";
-            Material orbMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-            if (orbMat == null)
-            {
-                if (!AssetDatabase.IsValidFolder("Assets/Materials"))
-                {
-                    AssetDatabase.CreateFolder("Assets", "Materials");
-                }
-                Shader unlit = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-                orbMat = new Material(unlit != null ? unlit : Shader.Find("Standard"));
-                orbMat.color = ColorPrimary;
-                AssetDatabase.CreateAsset(orbMat, matPath);
-            }
+            Material orbMat = GetOrCreateMaterial("Assets/Materials/M_DockOrb_Gloss.mat", ColorPrimary, 0.9f);
+            if (orbMat.HasProperty("_Metallic")) orbMat.SetFloat("_Metallic", 0.15f);
             orbRend.sharedMaterial = orbMat;
 
-            // Halo pulse ring
-            GameObject pulseRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pulseRing.name = "OrbPulseRing";
-            pulseRing.transform.SetParent(orbSphere.transform, false);
-            pulseRing.transform.localScale = new Vector3(1.3f, 0.01f, 1.3f);
-            Collider pCol = pulseRing.GetComponent<Collider>();
-            if (pCol != null) UnityEngine.Object.DestroyImmediate(pCol);
-
-            MeshRenderer ringRend = pulseRing.GetComponent<MeshRenderer>();
-            if (ringRend != null)
-            {
-                ringRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                ringRend.receiveShadows = false;
-                ringRend.sharedMaterial = orbMat;
-            }
-
-            // Orb Canvas with Restore Button
+            // Badge canvas just in front of the bead, facing the viewer (-Z is toward the user)
             GameObject orbCanvas = new GameObject("OrbCanvas");
-            orbCanvas.transform.SetParent(orbSphere.transform, false);
+            orbCanvas.transform.SetParent(orbVisual.transform, false);
+            orbCanvas.transform.localPosition = new Vector3(0f, 0f, -0.05f);
             Canvas oc = orbCanvas.AddComponent<Canvas>();
             oc.renderMode = RenderMode.WorldSpace;
-            orbCanvas.AddComponent<GraphicRaycaster>();
+            if (mainCam != null) oc.worldCamera = mainCam;
             orbCanvas.AddComponent<TrackedDeviceGraphicRaycaster>();
             RectTransform ocRt = orbCanvas.GetComponent<RectTransform>();
-            ocRt.sizeDelta = new Vector2(300f, 300f);
-            ocRt.localScale = Vector3.one * 0.001f;
+            ocRt.sizeDelta = new Vector2(140f, 140f);
+            ocRt.localScale = Vector3.one * 0.00075f; // 100px badge = 75mm
 
-            Button btnRestore = CreateButton("BtnRestoreOrb", orbCanvas.transform, "", Color.white, 250f, 250f, 16f, s_SpriteGlassCircle);
+            // Soft pulsing halo (MinimizedDockOrb drives its scale)
+            GameObject orbHalo = CreatePanel("OrbHalo", orbCanvas.transform, new Color(0f, 0.53f, 1f, 0.30f), 128f, 128f, s_SpriteGlassCircle);
+            orbHalo.GetComponent<Image>().raycastTarget = false;
+
+            Button btnRestore = CreateButton("BtnRestoreOrb", orbCanvas.transform, "", Color.white, 100f, 100f, 16f, s_SpriteGlassCircle);
             if (s_SpriteLogo != null)
             {
                 GameObject orbLogo = new GameObject("OrbLogo");
@@ -999,14 +973,17 @@ namespace BMU.VRTour.Editor
                 orbImg.preserveAspect = true;
                 orbImg.raycastTarget = false;
                 RectTransform olRt = orbLogo.GetComponent<RectTransform>();
-                olRt.sizeDelta = new Vector2(170f, 170f);
+                olRt.sizeDelta = new Vector2(64f, 64f);
             }
+            VRHeaderTooltip orbTip = btnRestore.gameObject.AddComponent<VRHeaderTooltip>();
+            orbTip.TooltipText = "Open Tour Panel";
 
             MinimizedDockOrb dockOrb = uiRoot.AddComponent<MinimizedDockOrb>();
             SetPrivateField(dockOrb, "m_MainCanvasContainer", deckContainer);
-            SetPrivateField(dockOrb, "m_DockOrbVisual", orbSphere);
+            SetPrivateField(dockOrb, "m_DockOrbVisual", orbVisual);
             SetPrivateField(dockOrb, "m_MainCanvasGroup", mainCanvasGroup);
-            SetPrivateField(dockOrb, "m_PulseRing", pulseRing.transform);
+            SetPrivateField(dockOrb, "m_PulseRing", orbHalo.transform);
+            SetPrivateField(dockOrb, "m_PulseScaleAmount", 0.12f);
 
             // ================================================================
             // WIRE CAMPUS TOUR MANAGER REFERENCES
@@ -1241,7 +1218,115 @@ namespace BMU.VRTour.Editor
                 tmp.lineSpacing = lineSpacing;
             }
             tmp.raycastTarget = false;
+
+            // Dark text gets a soft light halo so it stays readable over the campus now that the
+            // glass is more transparent (white text sits on solid buttons and needs none).
+            if (color.grayscale < 0.5f)
+            {
+                Material halo = GetHaloMaterial(tmp.font);
+                if (halo != null) tmp.fontSharedMaterial = halo;
+            }
             return tmp;
+        }
+
+        /// <summary>
+        /// One shared TMP material per font with a soft white underlay ("halo"). Saved under
+        /// Assets/Materials/UI so scenes reference an asset rather than a per-object instance.
+        /// </summary>
+        private static Material GetHaloMaterial(TMP_FontAsset font)
+        {
+            if (font == null || font.material == null) return null;
+            if (s_HaloMaterials.TryGetValue(font, out Material cached) && cached != null) return cached;
+
+            if (!AssetDatabase.IsValidFolder("Assets/Materials")) AssetDatabase.CreateFolder("Assets", "Materials");
+            if (!AssetDatabase.IsValidFolder("Assets/Materials/UI")) AssetDatabase.CreateFolder("Assets/Materials", "UI");
+
+            string path = $"Assets/Materials/UI/TMP_Halo_{font.name.Replace(' ', '_')}.mat";
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(font.material);
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            else
+            {
+                mat.CopyPropertiesFromMaterial(font.material); // keep atlas/shader in sync with the font
+            }
+
+            mat.EnableKeyword("UNDERLAY_ON");
+            mat.SetColor("_UnderlayColor", new Color(1f, 1f, 1f, 0.7f));
+            mat.SetFloat("_UnderlayOffsetX", 0f);
+            mat.SetFloat("_UnderlayOffsetY", 0f);
+            mat.SetFloat("_UnderlayDilate", 0.1f);
+            mat.SetFloat("_UnderlaySoftness", 0.25f);
+            EditorUtility.SetDirty(mat);
+
+            s_HaloMaterials[font] = mat;
+            return mat;
+        }
+
+        /// <summary>
+        /// Vertical stack that sizes each text child to its wrapped height, so blocks never overlap.
+        /// </summary>
+        private static GameObject CreateTextStack(string name, Transform parent, float spacing)
+        {
+            GameObject stack = new GameObject(name);
+            stack.transform.SetParent(parent, false);
+            stack.AddComponent<RectTransform>();
+            VerticalLayoutGroup vlg = stack.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = spacing;
+            vlg.childAlignment = TextAnchor.UpperLeft;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            return stack;
+        }
+
+        /// <summary>
+        /// Makes a pill grow horizontally to fit its single-line label (plus padding) instead of
+        /// letting long labels spill past its edges.
+        /// </summary>
+        private static void MakePillFitText(GameObject pill, TextMeshProUGUI label, int padX)
+        {
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            HorizontalLayoutGroup hlg = pill.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(padX, padX, 0, 0);
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = true;
+            ContentSizeFitter fitter = pill.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+        }
+
+        /// <summary>
+        /// Row of fixed-size cards, centred, curved onto a cylinder around the viewer.
+        /// </summary>
+        private static void ConfigureCardRow(GameObject container, float spacing)
+        {
+            HorizontalLayoutGroup row = container.AddComponent<HorizontalLayoutGroup>();
+            row.spacing = spacing;
+            row.childAlignment = TextAnchor.MiddleCenter;
+            row.childControlWidth = false;
+            row.childControlHeight = false;
+            row.childForceExpandWidth = false;
+            row.childForceExpandHeight = false;
+
+            UICardArc arc = container.AddComponent<UICardArc>();
+            SetPrivateField(arc, "m_Radius", CardArcRadius);
+        }
+
+        private static void SetDepth(Transform t, float z)
+        {
+            if (t is RectTransform rt)
+            {
+                Vector3 p = rt.anchoredPosition3D;
+                p.z = z;
+                rt.anchoredPosition3D = p;
+            }
         }
 
         private static Button CreateButton(string name, Transform parent, string label, Color bgColor, float width, float height, float fontSize = 16f, Sprite sprite = null, TMP_FontAsset font = null)
@@ -1347,9 +1432,9 @@ namespace BMU.VRTour.Editor
 
         private static GameObject CreateBuildingCard(string name, Transform parent, string badge, string title, string desc, string actionLabel, Color themeColor, out Button actionBtn)
         {
-            GameObject card = CreatePanel(name, parent, Color.white, 390f, 430f, s_SpriteGlassPanel20);
+            GameObject card = CreatePanel(name, parent, GlassCard, 390f, 430f, s_SpriteGlassPanel20);
 
-            // Card Badge Pill
+            // Card Badge Pill (grows to fit long badges such as "HIGH-PERFORMANCE COMPUTING")
             GameObject badgeObj = CreatePanel("BadgePill", card.transform, new Color(1f, 1f, 1f, 0.90f), 150f, 26f, s_SpriteRoundedRect8);
             RectTransform bRt = badgeObj.GetComponent<RectTransform>();
             bRt.anchorMin = new Vector2(0f, 1f);
@@ -1360,24 +1445,18 @@ namespace BMU.VRTour.Editor
             TextMeshProUGUI badgeText = CreateText("Badge", badgeObj.transform, badge, 11f, themeColor, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
             badgeText.alignment = TextAlignmentOptions.Center;
             SetFullStretch(badgeText.GetComponent<RectTransform>());
+            MakePillFitText(badgeObj, badgeText, 12);
 
-            // Card Title
-            TextMeshProUGUI titleText = CreateText("Title", card.transform, title, 22f, ColorNavy, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
-            RectTransform tRt = titleText.GetComponent<RectTransform>();
-            tRt.anchorMin = new Vector2(0f, 1f);
-            tRt.anchorMax = new Vector2(1f, 1f);
-            tRt.pivot = new Vector2(0f, 1f);
-            tRt.anchoredPosition = new Vector2(24f, -56f);
-            tRt.sizeDelta = new Vector2(-48f, 36f);
+            // Title + description stack (a 2-line title pushes the description down)
+            GameObject cardStack = CreateTextStack("TextStack", card.transform, 10f);
+            RectTransform csRt = cardStack.GetComponent<RectTransform>();
+            csRt.anchorMin = Vector2.zero;
+            csRt.anchorMax = Vector2.one;
+            csRt.offsetMin = new Vector2(24f, 90f);   // stays above the action button
+            csRt.offsetMax = new Vector2(-24f, -60f); // starts below the badge
 
-            // Card Description
-            TextMeshProUGUI descText = CreateText("Description", card.transform, desc, 15f, ColorNavy, FontStyles.Normal, 14f, s_FontPlusJakartaSansRegular);
-            RectTransform dRt = descText.GetComponent<RectTransform>();
-            dRt.anchorMin = new Vector2(0f, 1f);
-            dRt.anchorMax = new Vector2(1f, 1f);
-            dRt.pivot = new Vector2(0f, 1f);
-            dRt.anchoredPosition = new Vector2(24f, -100f);
-            dRt.sizeDelta = new Vector2(-48f, 210f);
+            TextMeshProUGUI titleText = CreateText("Title", cardStack.transform, title, 21f, ColorNavy, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
+            TextMeshProUGUI descText = CreateText("Description", cardStack.transform, desc, 17f, ColorNavy, FontStyles.Normal, 12f, s_FontPlusJakartaSansSemiBold);
 
             // Action Button
             actionBtn = CreateButton("BtnAction", card.transform, actionLabel, themeColor, 330f, 48f, 15f, s_SpriteRoundedRect12, s_FontPlusJakartaSansBold);
