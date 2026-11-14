@@ -33,8 +33,6 @@ namespace BMU.VRTour
             public string title;
             [TextArea(3, 6)] public string description;
             public string[] stats;
-            public string caption;
-            public string narration;
             public Sprite[] photos;
             public string[] photoLabels;
         }
@@ -88,6 +86,7 @@ namespace BMU.VRTour
         [SerializeField] private TextMeshProUGUI m_SlideTitleText;
         [SerializeField] private TextMeshProUGUI m_SlideDescText;
         [SerializeField] private TextMeshProUGUI m_SlideStatsText;
+        [SerializeField] private TextMeshProUGUI[] m_SlidePointerTexts;
         [SerializeField] private TextMeshProUGUI m_SlideIndexIndicator;
         [SerializeField] private Button m_BtnPrevSlide;
         [SerializeField] private Button m_BtnNextSlide;
@@ -271,55 +270,45 @@ namespace BMU.VRTour
         // ====================================================================
         private void InitializeTourData()
         {
-            // 5-Slide Intro Carousel (matching Figma prototype)
+            // 5-Slide Intro Carousel (matching slidewise material)
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "HERO GROUP LEGACY",
                 title = "Welcome to BML Munjal University",
-                description = "Named after the visionary founder of the Hero Group, Shri Brijmohan Lall Munjal, BMU was established to transform higher education through hands-on experiential learning, ethical leadership, and real-world industrial impact.",
-                stats = new[] { "• Founded by Hero Group", "• Mentored by Imperial College London", "• Experiential 3-2-1 Curriculum" },
-                caption = "Hero Legacy & Main Campus Gate",
-                narration = "Welcome to BML Munjal University. Founded by the Hero Group, BMU nurtures ethical leaders equipped with experiential knowledge."
+                description = "Named after Shri Brijmohan Lall Munjal, the visionary founder of the Hero Group, BML Munjal University was established with a vision to transform higher education. The university emphasises ethical leadership, innovation and preparing students to make meaningful contributions to society.",
+                stats = new[] { "Established in 2014", "Founded by the Hero Group", "Inspired by the Legacy of Shri Brijmohan Lall Munjal" }
             });
 
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "ACADEMIC EXCELLENCE",
-                title = "Achievements & Global Accreditations",
-                description = "BMU is ranked among the top 100 universities nationally in the NIRF rankings. With a QS I-GAUGE Diamond rating, patent programs, and academic collaboration with Imperial College London, our graduates enter top global corporations.",
-                stats = new[] { "• Top 100 NIRF Ranked", "• QS I-GAUGE Diamond Rated", "• 100+ Corporate Recruiting Partners" },
-                caption = "Honoring Innovation & Convocation",
-                narration = "Ranked among India's top 100 by NIRF, BMU delivers globally benchmarked academic rigor and prestigious international partnerships."
+                title = "Achievements & Global Recognition",
+                description = "BMU's commitment to academic quality is reflected in its institutional accreditations, programme assessments and national recognition. Its focus on academic rigour, research and industry engagement continues to strengthen its position in higher education.",
+                stats = new[] { "NAAC A Grade Accreditation", "QS I-GAUGE Diamond Rating", "77th in NIRF 2025 – Management Category" }
             });
 
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "CURRICULUM & SCHOOLS",
-                title = "Schools & Experiential Programs",
-                description = "Our schools of Engineering & Technology, Management, Law, and Liberal Studies emphasize interdisciplinary learning. 45% of student time is dedicated to hands-on lab work, maker studios, live venture creation, and internships.",
-                stats = new[] { "• SOET • SOM • SOL • SOLS", "• 45% Practical Hands-on Labs", "• B.Tech • MBA • Law • PhD" },
-                caption = "Experiential Learning & Studios",
-                narration = "Through the School of Engineering, Management, and Law, students spend over 45% of their curriculum in live, practical laboratories."
+                title = "Schools & Experiential Learning",
+                description = "BMU promotes an interdisciplinary approach to education, encouraging students to connect concepts across different fields of study. Learning extends beyond textbooks through practical assignments, industry interactions, research and opportunities to apply classroom knowledge to real-world challenges.",
+                stats = new[] { "School of Engineering & Technology", "School of Management, Law & Liberal Studies", "Undergraduate, Postgraduate & Doctoral Programmes" }
             });
 
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "INFRASTRUCTURE & LABS",
-                title = "World-Class 50-Acre Campus",
-                description = "A fully residential, green, and sustainable campus equipped with cutting-edge academic spaces, dedicated Maker's spaces, IoT and Siemens engineering labs, campus-wide Wi-Fi, and 24/7 student activity hubs.",
-                stats = new[] { "• 50-Acre Green Campus", "• Siemens Centre of Excellence", "• 100% Residential Community" },
-                caption = "Sustainable Green Living & High-Tech Labs",
-                narration = "Our 50-acre green residential campus provides cutting-edge research facilities, modern student residences, and continuous mentorship."
+                title = "A 50-Acre Campus for Learning & Discovery",
+                description = "Designed to support academic, residential and recreational activities, BMU's campus brings together spaces for learning, research, collaboration and student interaction. Its environment encourages students to explore their interests while balancing academics with personal development and campus life.",
+                stats = new[] { "Dedicated Research & Innovation Facilities", "Residential Hostels & Student Amenities", "Sports, Recreation & Collaborative Spaces" }
             });
 
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "STUDENT LIFE & CULTURE",
-                title = "Vibrant Campus Life, Fests & Sports",
-                description = "Life at BMU thrives beyond academics. With over 25 student clubs, the flagship annual cultural fest '67th Milestone', national hackathons, and world-class athletic facilities, students develop holistic character.",
-                stats = new[] { "• '67th Milestone' Annual Fest", "• 25+ Student-Run Clubs", "• Olympic-Grade Sports Complex" },
-                caption = "Fests, Athletics & Student Clubs",
-                narration = "From our signature festival 67th Milestone to 25+ student-led clubs and sports, campus life at BMU is full of energy and creativity."
+                title = "Vibrant Campus Life, Events & Sports",
+                description = "BMU's campus comes alive through the annual 67th Milestone festival, TEDxBMU, hackathons, and cultural events. With 24+ student clubs, outreach drives, and inter-university sports tournaments, students enjoy dynamic teamwork and vibrant campus life.",
+                stats = new[] { "24 Student-Run Clubs & Societies", "67th Milestone – 50+ Colleges Participated in 2026", "Basketball, Tennis, Volleyball & Gym Facilities" }
             });
 
             // Tour Locations (Exterior Plazas)
@@ -592,7 +581,41 @@ namespace BMU.VRTour
             if (m_SlideTitleText != null) m_SlideTitleText.text = slide.title;
             if (m_SlideDescText != null) m_SlideDescText.text = slide.description;
 
-            if (m_SlideStatsText != null && slide.stats != null)
+            if (m_SlidePointerTexts != null && m_SlidePointerTexts.Length > 0 && slide.stats != null)
+            {
+                for (int i = 0; i < m_SlidePointerTexts.Length; i++)
+                {
+                    if (m_SlidePointerTexts[i] != null)
+                    {
+                        if (i < slide.stats.Length && !string.IsNullOrEmpty(slide.stats[i]))
+                        {
+                            var parentObj = m_SlidePointerTexts[i].transform.parent.gameObject;
+                            parentObj.SetActive(true);
+                            m_SlidePointerTexts[i].text = slide.stats[i].TrimStart('•', ' ', '-');
+
+                            var tagRt = parentObj.GetComponent<RectTransform>();
+                            if (tagRt != null)
+                            {
+                                tagRt.pivot = new Vector2(0f, 0.5f);
+                            }
+                        }
+                        else
+                        {
+                            m_SlidePointerTexts[i].transform.parent.gameObject.SetActive(false);
+                        }
+                    }
+                }
+
+                if (m_SlidePointerTexts[0] != null && m_SlidePointerTexts[0].transform.parent != null)
+                {
+                    var containerRt = m_SlidePointerTexts[0].transform.parent.parent as RectTransform;
+                    if (containerRt != null)
+                    {
+                        LayoutRebuilder.ForceRebuildLayoutImmediate(containerRt);
+                    }
+                }
+            }
+            else if (m_SlideStatsText != null && slide.stats != null)
             {
                 m_SlideStatsText.text = string.Join("\n", slide.stats);
             }
@@ -623,11 +646,6 @@ namespace BMU.VRTour
                         m_PolaroidCaptions[i].text = slide.photoLabels[i];
                     }
                 }
-            }
-
-            if (TourAudioNarrator.Instance != null)
-            {
-                TourAudioNarrator.Instance.PlayNarration(slide.narration);
             }
         }
 

@@ -24,19 +24,19 @@ namespace BMU.VRTour.Editor
         private static readonly Color ColorHighlightGlow = new Color(0.01f, 0.58f, 0.88f, 0.75f); // Natural Sky Blue Glow
         private static readonly Color ColorAccent = new Color(0f, 0.40f, 0.70f);     // #0066B3
         private static readonly Color ColorRed = new Color(0.89f, 0.11f, 0.14f);     // #E31B23
-        private static readonly Color ColorGlassBg = new Color(1f, 1f, 1f, 0.48f);   // 48% Alpha (Figma parity)
-        private static readonly Color ColorGlassCard = new Color(1f, 1f, 1f, 0.56f); // 56% Alpha internal cards
-        private static readonly Color ColorGlassHUD = new Color(1f, 1f, 1f, 0.65f);  // 65% Alpha HUDs
-        private static readonly Color ColorGlassRim = new Color(1f, 1f, 1f, 0.85f);  // 85% Alpha outer rim
-        private static readonly Color ColorGlassInactive = new Color(1f, 1f, 1f, 0.32f); // 32% Alpha inactive
+        private static readonly Color ColorGlassBg = new Color(1f, 1f, 1f, 0.53f);   // 53% Alpha (+5%)
+        private static readonly Color ColorGlassCard = new Color(1f, 1f, 1f, 0.61f); // 61% Alpha internal cards (+5%)
+        private static readonly Color ColorGlassHUD = new Color(1f, 1f, 1f, 0.70f);  // 70% Alpha HUDs (+5%)
+        private static readonly Color ColorGlassRim = new Color(1f, 1f, 1f, 0.90f);  // 90% Alpha outer rim (+5%)
+        private static readonly Color ColorGlassInactive = new Color(1f, 1f, 1f, 0.37f); // 37% Alpha inactive (+5%)
         private static readonly Color ColorWhite = Color.white;
         private static readonly Color ColorPitchBlack = Color.black; // #000000 Pitch Black
 
         // Glass tints multiply the glass sprite's own alpha (sprite fill ~48-65%, rim ~85%).
         // Kept well below 1 so the campus shows through; legibility comes from the text halo below.
-        private static readonly Color GlassCard = new Color(1f, 1f, 1f, 0.72f);     // main stage cards
-        private static readonly Color GlassOrnament = new Color(1f, 1f, 1f, 0.80f); // small floating controls
-        private static readonly Color GlassInner = new Color(1f, 1f, 1f, 0.50f);    // glass stacked on glass
+        private static readonly Color GlassCard = new Color(1f, 1f, 1f, 0.77f);     // main stage cards (+5%)
+        private static readonly Color GlassOrnament = new Color(1f, 1f, 1f, 0.85f); // small floating controls (+5%)
+        private static readonly Color GlassInner = new Color(1f, 1f, 1f, 0.55f);    // glass stacked on glass (+5%)
 
         // Body copy size: 20px = 20mm at 0.001 scale, ~11 dmm at the 1.8m follow distance (17px was too small to read in-headset).
         private const float BodyTextSize = 20f;
@@ -572,8 +572,8 @@ namespace BMU.VRTour.Editor
             introRt.offsetMin = new Vector2(20f, 24f);  // rebalanced vertical margins
             introRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
 
-            // Carousel Card (High Fidelity 1120 x 540 with 50% alpha acrylic glass)
-            GameObject cardObj = CreatePanel("CarouselSlideCard", introPanel.transform, GlassCard, 1120f, 540f, s_SpriteGlassPanel26);
+            // Carousel Card (High Fidelity 1120 x 730 with 50% alpha acrylic glass, +35% vertical length)
+            GameObject cardObj = CreatePanel("CarouselSlideCard", introPanel.transform, GlassCard, 1120f, 730f, s_SpriteGlassPanel26);
             RectTransform cardRt = cardObj.GetComponent<RectTransform>();
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -612,8 +612,36 @@ namespace BMU.VRTour.Editor
             stackRt.offsetMax = new Vector2(-20f, -70f); // starts below the badge pill
 
             TextMeshProUGUI slideTitle = CreateText("SlideTitle", slideTextStack.transform, "Welcome to BML Munjal University", 38f, ColorPitchBlack, FontStyles.Bold);
-            TextMeshProUGUI slideDesc = CreateText("SlideDesc", slideTextStack.transform, "Description text goes here...", BodyTextSize, ColorPitchBlack, FontStyles.Bold, 14f, s_FontPlusJakartaSansBold);
-            TextMeshProUGUI slideStats = CreateText("SlideStats", slideTextStack.transform, "• Founded by Hero Group\n• Mentored by Imperial College London\n• Experiential 3-2-1 Curriculum", 20f, ColorPitchBlack, FontStyles.Bold, 18f, s_FontPlusJakartaSansBold);
+            TextMeshProUGUI slideDesc = CreateText("SlideDesc", slideTextStack.transform, "Named after Shri Brijmohan Lall Munjal, the visionary founder of the Hero Group, BML Munjal University was established with a vision to transform higher education. The university emphasises ethical leadership, innovation and preparing students to make meaningful contributions to society.", BodyTextSize, ColorPitchBlack, FontStyles.Bold, 14f, s_FontPlusJakartaSansBold);
+
+            // Pointer tags: white rounded rectangles with panel opacity (GlassCard)
+            // Left-aligned with the text above (pivot.x = 0), stacked vertically one below the other
+            GameObject pointersContainer = new GameObject("SlidePointersContainer");
+            pointersContainer.transform.SetParent(slideTextStack.transform, false);
+            RectTransform pContRt = pointersContainer.GetComponent<RectTransform>() ?? pointersContainer.AddComponent<RectTransform>();
+            pContRt.anchorMin = new Vector2(0f, 1f);
+            pContRt.anchorMax = new Vector2(1f, 1f);
+            pContRt.pivot = new Vector2(0f, 1f);
+            pContRt.anchoredPosition = Vector2.zero;
+
+            VerticalLayoutGroup pVlg = pointersContainer.AddComponent<VerticalLayoutGroup>();
+            pVlg.spacing = 8f;
+            pVlg.childAlignment = TextAnchor.UpperLeft;
+            pVlg.childControlWidth = false;
+            pVlg.childControlHeight = true;
+            pVlg.childForceExpandWidth = false;
+            pVlg.childForceExpandHeight = false;
+
+            string[] defaultPointers = new string[] {
+                "Established in 2014",
+                "Founded by the Hero Group",
+                "Inspired by the Legacy of Shri Brijmohan Lall Munjal"
+            };
+            TextMeshProUGUI[] pointerTexts = new TextMeshProUGUI[3];
+            for (int i = 0; i < 3; i++)
+            {
+                CreatePointerTag($"PointerTag_{i + 1}", pointersContainer.transform, defaultPointers[i], GlassCard, out pointerTexts[i]);
+            }
 
             // Slide Index (Bottom-Left inside LeftContainer, strictly bounded)
             TextMeshProUGUI slideIndex = CreateText("SlideIndex", leftContainer.transform, "SLIDE 1 OF 5", 18f, ColorPitchBlack, FontStyles.Bold);
@@ -642,10 +670,10 @@ namespace BMU.VRTour.Editor
             rightRt.offsetMin = Vector2.zero;
             rightRt.offsetMax = Vector2.zero;
 
-            // 3 Staggered / Tilted Polaroid Image Cards with Unsplash Photos (Figma Parity: -3.5°, +2.8°, -1.8°)
-            CreatePolaroidPlaceholder("Polaroid_A", rightContainer.transform, new Vector2(250f, 180f), new Vector2(-65f, 90f), -3.5f, "BMU FRONT ENTRANCE", s_PhotoSlide1_Gate, out Image imgA, out TextMeshProUGUI capA);
-            CreatePolaroidPlaceholder("Polaroid_C", rightContainer.transform, new Vector2(260f, 180f), new Vector2(-55f, -95f), -1.8f, "ACADEMIC CAMPUS SKYLINE", s_PhotoSlide1_Skyline, out Image imgC, out TextMeshProUGUI capC);
-            CreatePolaroidPlaceholder("Polaroid_B", rightContainer.transform, new Vector2(285f, 200f), new Vector2(65f, 5f), 2.8f, "STUDENT COLLABORATIVE QUAD", s_PhotoSlide1_Quad, out Image imgB, out TextMeshProUGUI capB);
+            // 3 Staggered / Tilted Polaroid Image Cards (spaced vertically across 730px height, spread horizontally to prevent cutoff)
+            CreatePolaroidPlaceholder("Polaroid_A", rightContainer.transform, new Vector2(250f, 180f), new Vector2(-80f, 190f), -3.5f, "Our Founder, Shri Brijmohan Lall Munjal", s_PhotoSlide1_Gate, out Image imgA, out TextMeshProUGUI capA);
+            CreatePolaroidPlaceholder("Polaroid_C", rightContainer.transform, new Vector2(260f, 180f), new Vector2(-70f, -190f), -1.8f, "Campus Skyline", s_PhotoSlide1_Skyline, out Image imgC, out TextMeshProUGUI capC);
+            CreatePolaroidPlaceholder("Polaroid_B", rightContainer.transform, new Vector2(285f, 200f), new Vector2(85f, 0f), 2.8f, "Student Learning & Collaboration", s_PhotoSlide1_Quad, out Image imgB, out TextMeshProUGUI capB);
 
             // Stagger the polaroids in depth so the collage has real parallax in the headset
             SetDepth(imgA.transform.parent, -10f);
@@ -994,7 +1022,8 @@ namespace BMU.VRTour.Editor
             SetPrivateField(tourManager, "m_SlideBadgeText", slideBadge);
             SetPrivateField(tourManager, "m_SlideTitleText", slideTitle);
             SetPrivateField(tourManager, "m_SlideDescText", slideDesc);
-            SetPrivateField(tourManager, "m_SlideStatsText", slideStats);
+            SetPrivateField(tourManager, "m_SlideStatsText", pointerTexts[0]);
+            SetPrivateField(tourManager, "m_SlidePointerTexts", pointerTexts);
             SetPrivateField(tourManager, "m_SlideIndexIndicator", slideIndex);
             SetPrivateField(tourManager, "m_BtnPrevSlide", btnPrev);
             SetPrivateField(tourManager, "m_BtnNextSlide", btnNext);
@@ -1111,7 +1140,7 @@ namespace BMU.VRTour.Editor
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_2_quad.jpg"),
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_3_skyline.jpg")
                 },
-                labels = new string[] { "BMU Front Entrance", "Student Collaborative Quad", "Academic Campus Skyline" }
+                labels = new string[] { "Our Founder, Shri Brijmohan Lall Munjal", "Student Learning & Collaboration", "Campus Skyline" }
             };
 
             // Slide 2
@@ -1122,7 +1151,7 @@ namespace BMU.VRTour.Editor
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_2_photo_2_industry.jpg"),
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_2_photo_3_research.jpg")
                 },
-                labels = new string[] { "Annual Convocation Hall", "Industry Collaboration", "Research Excellence Awards" }
+                labels = new string[] { "Annual Convocation", "Industry Collaboration", "Research & Academic Excellence" }
             };
 
             // Slide 3
@@ -1133,7 +1162,7 @@ namespace BMU.VRTour.Editor
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_3_photo_2_management.jpg"),
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_3_photo_3_mootcourt.jpg")
                 },
-                labels = new string[] { "Advanced Robotics Testing", "Management Case Discussion", "Moot Courtroom Sessions" }
+                labels = new string[] { "Advanced Engineering & Robotics", "Management Case Discussions", "Moot Court & Legal Learning" }
             };
 
             // Slide 4
@@ -1144,7 +1173,7 @@ namespace BMU.VRTour.Editor
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_4_photo_2_iot.jpg"),
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_4_photo_3_auditorium.jpg")
                 },
-                labels = new string[] { "Central Library & Atrium", "IoT & Electronics Studio", "Smart Tiered Auditorium" }
+                labels = new string[] { "Central Library & Learning Spaces", "IoT, Robotics & Engineering Laboratories", "Student Residences & Campus Facilities" }
             };
 
             // Slide 5
@@ -1155,7 +1184,7 @@ namespace BMU.VRTour.Editor
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_5_photo_2_sports.jpg"),
                     AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_5_photo_3_hackathon.jpg")
                 },
-                labels = new string[] { "67th Milestone Rock Night", "Inter-University Sports Arena", "Student Technical Hackathon" }
+                labels = new string[] { "67th Milestone – Hero's Challenge", "Workshops, Cultural Events & Student Initiatives", "Inter-University Sports & Competitions" }
             };
 
             SetPrivateField(tourManager, "m_SlidePhotoSets", sets);
@@ -1768,6 +1797,7 @@ namespace BMU.VRTour.Editor
             paRt.anchoredPosition = new Vector2(0f, -10f);
 
             outPhotoImage = photoArea.GetComponent<Image>();
+            outPhotoImage.preserveAspect = true;
             if (photoSprite != null)
             {
                 outPhotoImage.sprite = photoSprite;
@@ -1784,6 +1814,45 @@ namespace BMU.VRTour.Editor
             capRt.sizeDelta = new Vector2(-16f, 22f);
 
             return card;
+        }
+
+        private static GameObject CreatePointerTag(string name, Transform parent, string text, Color tagColor, out TextMeshProUGUI outText)
+        {
+            GameObject tagObj = new GameObject(name);
+            tagObj.transform.SetParent(parent, false);
+
+            RectTransform tagRt = tagObj.GetComponent<RectTransform>() ?? tagObj.AddComponent<RectTransform>();
+            tagRt.anchorMin = new Vector2(0f, 1f);
+            tagRt.anchorMax = new Vector2(0f, 1f);
+            tagRt.pivot = new Vector2(0f, 0.5f); // Left-aligned pivot ensures tags align flush with text above with no horizontal offset
+            tagRt.anchoredPosition = Vector2.zero;
+
+            Image tagBg = tagObj.AddComponent<Image>();
+            tagBg.sprite = s_SpriteRoundedRect8 != null ? s_SpriteRoundedRect8 : s_SpriteGlassPill;
+            tagBg.type = Image.Type.Sliced;
+            tagBg.color = tagColor; // white with same opacity as panel (GlassCard = 0.77f)
+            tagBg.raycastTarget = false;
+
+            var outline = tagObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0.17f, 0.29f, 0.15f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            HorizontalLayoutGroup hlg = tagObj.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(16, 16, 6, 6);
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+
+            ContentSizeFitter csf = tagObj.AddComponent<ContentSizeFitter>();
+            csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            outText = CreateText("TagLabel", tagObj.transform, text, 15f, ColorPitchBlack, FontStyles.Bold, 0f, s_FontPlusJakartaSansBold);
+            outText.alignment = TextAlignmentOptions.MidlineLeft;
+
+            return tagObj;
         }
 
         private static void SetFullStretch(RectTransform rt)
