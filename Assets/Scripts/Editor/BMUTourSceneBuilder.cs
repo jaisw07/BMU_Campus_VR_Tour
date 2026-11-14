@@ -1719,6 +1719,50 @@ namespace BMU.VRTour.Editor
                 envInstance.transform.position = Vector3.zero;
                 envInstance.transform.rotation = Quaternion.identity;
                 envInstance.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // Halved scale per user request
+
+                // Detailed North Block replaces the 'NB' massing box baked into the campus GLB.
+                GameObject nbPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CampusEnvironmentSetup.NorthBlockPrefabPath);
+                if (nbPrefab != null)
+                {
+                    foreach (Transform t in envInstance.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "NB" && t.GetComponent<MeshFilter>() != null)
+                        {
+                            t.gameObject.SetActive(false);
+                        }
+                    }
+
+                    GameObject nbInstance = (GameObject)PrefabUtility.InstantiatePrefab(nbPrefab);
+                    nbInstance.name = "NorthBlock_Exterior";
+                    // Centred on the plaza anchor line (X = -480.25). The campus-scale model is ~119m deep at 0.5x,
+                    // so Z = -59 puts its front face at about Z = -120 (the old NB box front), 7.5m ahead of Anchor_NorthBlock_Plaza.
+                    // Model's front (fins/cafe) is on its +Z side, so turn it 180 degrees to face the plaza (-Z).
+                    nbInstance.transform.position = new Vector3(-480.25f, 0f, -59f);
+                    nbInstance.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                    nbInstance.transform.localScale = Vector3.one * 1.75f; // 0.5 campus scale x 3.5 campus-size factor (raw model is 2x)
+                }
+                else
+                {
+                    Debug.LogWarning("[BMUTourSceneBuilder] Prefab_Exterior_NorthBlock not found. Run 'BMU VR Tour/Setup North Block Exterior Prefab' first.");
+                }
+
+                // BMU Workshop replaces the 'MechanicalWorkshop' massing box. Prefab is configured in the Editor
+                // (colliders, shadows). World scale 1.75 = 0.5 campus scale x 3.5 campus-size factor (same as the North Block).
+                GameObject workshopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Environment/Prefab_Exterior_Workshop.prefab");
+                if (workshopPrefab != null)
+                {
+                    foreach (Transform t in envInstance.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "MechanicalWorkshop" && t.GetComponent<MeshFilter>() != null) t.gameObject.SetActive(false);
+                    }
+
+                    GameObject workshop = (GameObject)PrefabUtility.InstantiatePrefab(workshopPrefab);
+                    workshop.name = "BMU_Workshop";
+                    workshop.transform.position = new Vector3(-411.63f, 0f, -328.3f); // front facade ~Z -290, 15m ahead of Anchor_Workshop_Plaza
+                    workshop.transform.rotation = Quaternion.identity;               // front (glass entrances) faces +Z toward the plaza
+                    workshop.transform.localScale = Vector3.one * 1.75f;
+                    workshop.transform.SetParent(envInstance.transform, true);       // same parent as the other campus buildings
+                }
             }
             else
             {
@@ -1874,6 +1918,7 @@ namespace BMU.VRTour.Editor
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_Campus_Exterior.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_NorthBlock_Interiors.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_Gateway_Interiors.unity", true),
+                new EditorBuildSettingsScene("Assets/Scenes/BMU_Workshop_Interior.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/SampleScene.unity", false)
             };
             EditorBuildSettings.scenes = scenes;

@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Scene_Gateway_Interiors.unity
     guid: 4165ef31b36e53346ad248be1f0c4318
+  - enabled: 1
+    path: Assets/Scenes/BMU_Workshop_Interior.unity
+    guid: 50fdfaa0d212348428e94fee4aeb6ad5
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05

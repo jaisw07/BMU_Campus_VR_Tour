@@ -375,7 +375,7 @@ namespace BMU.VRTour
                 features = new[] { "• Siemens & Hero MotoCorp Partnerships", "• Industrial CNC & Lathe Machinery", "• Additive Manufacturing 3D Printing Lab", "• Formula Student & SAE BAJA Race Bays" },
                 caption = "Heavy Machinery, 3D Printing & Motorsports Garage",
                 narration = "The Mechanical Workshop houses industrial CNCs, 3D printing equipment, and the student garage for Formula and BAJA racing vehicles.",
-                hasInterior = false,
+                hasInterior = true,
                 buildingKey = "workshop"
             };
 
@@ -433,6 +433,28 @@ namespace BMU.VRTour
                 description = "BMU's government-backed startup incubator providing seed capital, patent guidance, and maker spaces for student ventures.",
                 highlights = new[] { "• Seed Capital & Venture Grants", "• Rapid Prototyping 3D Printers", "• Hero Group Executive Network" },
                 narration = "At the ACIC startup incubation center, student founders receive seed grants, patent advice, and corporate mentorship."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "ws-foyer",
+                buildingKey = "workshop",
+                name = "Workshop Entrance Foyer",
+                badge = "WELCOME & EXHIBITS",
+                description = "The glazed entrance foyer of the Mechanical Workshop, with a showcase display and seating, opening onto the main workshop hall.",
+                highlights = new[] { "• Glazed Double-Height Entrance", "• Project Showcase Display", "• Access to Ground-Floor Labs" },
+                narration = "You are in the Mechanical Workshop foyer. From here, the main hall and the ground-floor labs open up ahead."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "ws-hall",
+                buildingKey = "workshop",
+                name = "Main Workshop Hall",
+                badge = "INDUSTRIAL MACHINERY",
+                description = "A full-height workshop hall of industrial machinery and workbenches, flanked by the CNC, metrology, robotics, IoT, 3D printing and electronics labs.",
+                highlights = new[] { "• Industrial CNC & Lathe Machinery", "• Robotics, IoT & Electronics Labs", "• Additive Manufacturing 3D Printing Lab" },
+                narration = "This is the main workshop hall, where students work on industrial machines, robotics, and additive manufacturing projects."
             });
 
             // Bind Photographic Sprites to Carousel Slides
@@ -626,7 +648,7 @@ namespace BMU.VRTour
             };
 
             // If indoors, return to exterior front gate per architecture plan
-            bool isIndoors = m_CurrentLocationKey.StartsWith("nb-") || m_CurrentLocationKey.StartsWith("gw-");
+            bool isIndoors = IsRoomKey(m_CurrentLocationKey);
             if (SceneTransitionManager.Instance != null && isIndoors)
             {
                 SceneTransitionManager.Instance.TransitionToExterior("front-gate", showHubAction);
@@ -644,6 +666,19 @@ namespace BMU.VRTour
         // ====================================================================
         // STAGE 3: LOCATION EXTERIOR PLAZAS & INTERIORS
         // ====================================================================
+        // Room keys carry their building in the prefix: nb- (North Block), gw- (Gateway), ws- (Workshop).
+        private static bool IsRoomKey(string key)
+        {
+            return key.StartsWith("nb-") || key.StartsWith("gw-") || key.StartsWith("ws-");
+        }
+
+        private static string BuildingKeyForRoom(string roomKey)
+        {
+            if (roomKey.StartsWith("gw-")) return "gateway";
+            if (roomKey.StartsWith("ws-")) return "workshop";
+            return "north-block";
+        }
+
         public void TeleportToLocation(string locKey)
         {
             m_CurrentLocationKey = locKey;
@@ -663,11 +698,9 @@ namespace BMU.VRTour
 
             if (SceneTransitionManager.Instance != null)
             {
-                bool isRoom = locKey.StartsWith("nb-") || locKey.StartsWith("gw-");
-                if (isRoom)
+                if (IsRoomKey(locKey))
                 {
-                    string buildingKey = locKey.StartsWith("gw-") ? "gateway" : "north-block";
-                    SceneTransitionManager.Instance.TransitionToInterior(buildingKey, locKey, onArrived);
+                    SceneTransitionManager.Instance.TransitionToInterior(BuildingKeyForRoom(locKey), locKey, onArrived);
                 }
                 else
                 {
@@ -788,11 +821,13 @@ namespace BMU.VRTour
         // ====================================================================
         public void OpenInteriorHubForCurrentBuilding()
         {
-            string building = m_CurrentBuildingContext == "outside-gateway" ? "gateway" : "north-block";
+            string building = m_CurrentBuildingContext == "outside-gateway" ? "gateway"
+                : m_CurrentBuildingContext == "outside-workshop" ? "workshop" : "north-block";
 
             ActivateStage(m_InternalBuildingHubPanel);
 
-            string hubTitle = building == "gateway" ? "GATEWAY BUILDING • INTERIOR SPACES" : "NORTH BLOCK • INTERIOR SPACES";
+            string hubTitle = building == "gateway" ? "GATEWAY BUILDING • INTERIOR SPACES"
+                : building == "workshop" ? "MECHANICAL WORKSHOP • INTERIOR SPACES" : "NORTH BLOCK • INTERIOR SPACES";
             UpdateHeaderLocation(hubTitle);
 
             if (m_InternalHubTag != null) m_InternalHubTag.gameObject.SetActive(false);

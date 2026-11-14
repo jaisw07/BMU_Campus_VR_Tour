@@ -22,6 +22,12 @@ namespace BMU.VRTour
         public const string ExteriorSceneName = "Scene_Campus_Exterior";
         public const string NorthBlockInteriorsSceneName = "Scene_NorthBlock_Interiors";
         public const string GatewayInteriorsSceneName = "Scene_Gateway_Interiors";
+        public const string WorkshopInteriorSceneName = "BMU_Workshop_Interior";
+
+        private static readonly string[] s_InteriorScenes =
+        {
+            NorthBlockInteriorsSceneName, GatewayInteriorsSceneName, WorkshopInteriorSceneName
+        };
 
         [Header("XR Rig References")]
         [SerializeField] private XROrigin m_XROrigin;
@@ -64,7 +70,8 @@ namespace BMU.VRTour
             {
                 if (!IsSceneLoaded(ExteriorSceneName) &&
                     !IsSceneLoaded(NorthBlockInteriorsSceneName) &&
-                    !IsSceneLoaded(GatewayInteriorsSceneName))
+                    !IsSceneLoaded(GatewayInteriorsSceneName) &&
+                    !IsSceneLoaded(WorkshopInteriorSceneName))
                 {
                     StartCoroutine(InitialExteriorLoadRoutine());
                 }
@@ -142,13 +149,12 @@ namespace BMU.VRTour
             }
 
             // 2. Unload active interior scene if present
-            if (m_CurrentLoadedSubScene == NorthBlockInteriorsSceneName || IsSceneLoaded(NorthBlockInteriorsSceneName))
+            foreach (string interiorScene in s_InteriorScenes)
             {
-                yield return StartCoroutine(UnloadSceneRoutine(NorthBlockInteriorsSceneName));
-            }
-            if (m_CurrentLoadedSubScene == GatewayInteriorsSceneName || IsSceneLoaded(GatewayInteriorsSceneName))
-            {
-                yield return StartCoroutine(UnloadSceneRoutine(GatewayInteriorsSceneName));
+                if (IsSceneLoaded(interiorScene))
+                {
+                    yield return StartCoroutine(UnloadSceneRoutine(interiorScene));
+                }
             }
 
             // 3. Load Exterior Scene if not loaded
@@ -208,6 +214,10 @@ namespace BMU.VRTour
             {
                 targetInteriorScene = GatewayInteriorsSceneName;
             }
+            else if (buildingKey == "workshop" || roomKey.StartsWith("ws-"))
+            {
+                targetInteriorScene = WorkshopInteriorSceneName;
+            }
 
             // 1. Fade Out
             if (m_ScreenFade != null)
@@ -224,10 +234,12 @@ namespace BMU.VRTour
             }
 
             // 3. Unload alternate interior scene if loaded
-            string alternateInterior = targetInteriorScene == NorthBlockInteriorsSceneName ? GatewayInteriorsSceneName : NorthBlockInteriorsSceneName;
-            if (IsSceneLoaded(alternateInterior))
+            foreach (string interiorScene in s_InteriorScenes)
             {
-                yield return StartCoroutine(UnloadSceneRoutine(alternateInterior));
+                if (interiorScene != targetInteriorScene && IsSceneLoaded(interiorScene))
+                {
+                    yield return StartCoroutine(UnloadSceneRoutine(interiorScene));
+                }
             }
 
             // 4. Load Target Interior Scene
@@ -389,6 +401,8 @@ namespace BMU.VRTour
                 case "nb-faculty": expectedPodName = "RoomPod_FacultyCabins"; break;
                 case "gw-classroom": expectedPodName = "RoomPod_ExecutiveMBASeminar"; break;
                 case "gw-lab": expectedPodName = "RoomPod_ACICStartupIncubator"; break;
+                case "ws-foyer": expectedPodName = "RoomPod_WorkshopFoyer"; break;
+                case "ws-hall": expectedPodName = "RoomPod_WorkshopHall"; break;
             }
 
             if (!string.IsNullOrEmpty(expectedPodName))

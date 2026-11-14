@@ -182,6 +182,13 @@ namespace BMU.VRTour
 
             m_CurrentZoneKey = zoneKey;
             ZoneEnvironmentData data = m_ZonePresets.Find(z => z.zoneKey == zoneKey);
+            if (data == null && zoneKey.StartsWith("ws-"))
+            {
+                // The workshop interior is real 3D with no photosphere preset: leave the environment untouched.
+                onDone?.Invoke();
+                return;
+            }
+
             if (data == null)
             {
                 data = m_ZonePresets.Count > 0 ? m_ZonePresets[0] : null;
