@@ -1333,6 +1333,158 @@ namespace BMU.VRTour.Editor
             SetPrivateField(arc, "m_Radius", CardArcRadius);
         }
 
+        // ====================================================================
+        // "COMING SOON" PLACEHOLDERS FOR UNTEXTURED CAMPUS BUILDINGS
+        // ====================================================================
+        private const string ComingSoonSignTexturePath = "Assets/Textures/Environment/T_ComingSoon_Sign.png";
+        private const float ComingSoonSignAspect = 3.2f;   // texture is 2048 x 640
+        private const float ComingSoonSignMaxWidth = 60f;  // metres, so huge walls don't get billboard-sized signs
+        private const float ComingSoonSignGroundGap = 3f;  // metres between the ground and the sign's bottom edge
+
+        /// <summary>
+        /// The campus GLB still has plain massing boxes (material "BuildingSpace*") for buildings that have no
+        /// real model yet. Each one gets a clean concrete material plus a "COMING SOON" sign on every vertical
+        /// face. The signs are separate quads because the boxes' UVs are a top-down projection, so a texture
+        /// applied to the box itself would smear down the walls. Boxes already replaced by real models (NB,
+        /// MechanicalWorkshop) are deactivated before this runs and are skipped.
+        /// </summary>
+        private static void ApplyComingSoonSigns(GameObject envRoot)
+        {
+            Texture2D signTex = LoadComingSoonTexture();
+            Material facadeMat = GetOrCreateMaterial("Assets/Materials/M_ComingSoon_Facade.mat", new Color(0.80f, 0.81f, 0.83f), 0.25f);
+            Material signMat = GetOrCreateSignMaterial("Assets/Materials/M_ComingSoon_Sign.mat", signTex);
+
+            GameObject signsRoot = new GameObject("ComingSoon_Signs");
+            int buildings = 0, signs = 0;
+
+            foreach (MeshRenderer mr in envRoot.GetComponentsInChildren<MeshRenderer>(false))
+            {
+                Material[] mats = mr.sharedMaterials;
+                bool isMassingBox = mats.Length > 0 &&
+                    System.Array.TrueForAll(mats, m => m != null && m.name.StartsWith("BuildingSpace"));
+                if (!isMassingBox) continue;
+
+                MeshFilter mf = mr.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+
+                Material[] replaced = new Material[mats.Length];
+                for (int i = 0; i < replaced.Length; i++) replaced[i] = facadeMat;
+                mr.sharedMaterials = replaced;
+
+                signs += AddComingSoonSigns(mr, mf.sharedMesh, signMat, signsRoot.transform);
+                buildings++;
+            }
+
+            Debug.Log($"[BMU VR Tour] 'Coming Soon' applied to {buildings} untextured buildings ({signs} signs).");
+        }
+
+        private static int AddComingSoonSigns(MeshRenderer building, Mesh mesh, Material signMat, Transform parent)
+        {
+            // Collect the world-space extent of the vertical walls facing each cardinal direction
+            var walls = new System.Collections.Generic.Dictionary<Vector3, Bounds>();
+            Transform t = building.transform;
+            Vector3[] verts = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            int[] tris = mesh.triangles;
+
+            if (verts.Length > 0 && normals.Length == verts.Length && tris.Length > 0)
+            {
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    Vector3 n = t.TransformDirection(normals[tris[i]] + normals[tris[i + 1]] + normals[tris[i + 2]]).normalized;
+                    if (Mathf.Abs(n.y) > 0.2f) continue; // roofs, floors and sloped faces
+
+                    Vector3 dir = Mathf.Abs(n.x) > Mathf.Abs(n.z) ? new Vector3(Mathf.Sign(n.x), 0f, 0f) : new Vector3(0f, 0f, Mathf.Sign(n.z));
+                    for (int k = 0; k < 3; k++)
+                    {
+                        Vector3 p = t.TransformPoint(verts[tris[i + k]]);
+                        if (walls.TryGetValue(dir, out Bounds wb)) { wb.Encapsulate(p); walls[dir] = wb; }
+                        else walls[dir] = new Bounds(p, Vector3.zero);
+                    }
+                }
+            }
+            else
+            {
+                // Mesh data not readable: fall back to the four sides of the renderer bounds
+                Bounds b = building.bounds;
+                foreach (Vector3 dir in new[] { Vector3.forward, Vector3.back, Vector3.right, Vector3.left })
+                {
+                    Vector3 c = b.center + Vector3.Scale(dir, b.extents);
+                    Vector3 size = dir.x != 0f ? new Vector3(0f, b.size.y, b.size.z) : new Vector3(b.size.x, b.size.y, 0f);
+                    walls[dir] = new Bounds(c, size);
+                }
+            }
+
+            int placed = 0;
+            foreach (var kv in walls)
+            {
+                Vector3 dir = kv.Key;
+                Bounds wall = kv.Value;
+                float wallWidth = dir.x != 0f ? wall.size.z : wall.size.x;
+                float bottom = Mathf.Max(wall.min.y, 0f); // some boxes extend below ground
+                float wallHeight = wall.max.y - bottom;
+                if (wallWidth < 4f || wallHeight < 3f) continue;
+
+                float w = Mathf.Min(wallWidth * 0.6f, wallHeight * 0.5f * ComingSoonSignAspect, ComingSoonSignMaxWidth);
+                float h = w / ComingSoonSignAspect;
+                // Low on the wall so it is read from the ground, not centred on a tall tower
+                float cy = Mathf.Min(bottom + ComingSoonSignGroundGap + h * 0.5f, wall.max.y - h * 0.5f);
+
+                float plane = dir.x > 0f ? wall.max.x : dir.x < 0f ? wall.min.x : dir.z > 0f ? wall.max.z : wall.min.z;
+                Vector3 pos = new Vector3(dir.x != 0f ? plane : wall.center.x, cy, dir.z != 0f ? plane : wall.center.z)
+                              + dir * 0.25f; // just off the wall to avoid z-fighting
+
+                GameObject sign = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                sign.name = $"ComingSoon_{building.name}_{(dir.x > 0f ? "E" : dir.x < 0f ? "W" : dir.z > 0f ? "N" : "S")}";
+                UnityEngine.Object.DestroyImmediate(sign.GetComponent<Collider>());
+                sign.transform.SetParent(parent, false);
+                sign.transform.position = pos;
+                sign.transform.rotation = Quaternion.LookRotation(-dir, Vector3.up); // quad's visible side faces outward
+                sign.transform.localScale = new Vector3(w, h, 1f);
+
+                MeshRenderer r = sign.GetComponent<MeshRenderer>();
+                r.sharedMaterial = signMat;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                GameObjectUtility.SetStaticEditorFlags(sign, StaticEditorFlags.BatchingStatic);
+                placed++;
+            }
+            return placed;
+        }
+
+        private static Texture2D LoadComingSoonTexture()
+        {
+            if (AssetImporter.GetAtPath(ComingSoonSignTexturePath) is TextureImporter importer)
+            {
+                bool dirty = false;
+                if (importer.textureType != TextureImporterType.Default) { importer.textureType = TextureImporterType.Default; dirty = true; }
+                if (importer.wrapMode != TextureWrapMode.Clamp) { importer.wrapMode = TextureWrapMode.Clamp; dirty = true; }
+                if (!importer.mipmapEnabled) { importer.mipmapEnabled = true; dirty = true; }
+                if (importer.anisoLevel < 8) { importer.anisoLevel = 8; dirty = true; } // signs are seen at grazing angles
+                if (dirty) importer.SaveAndReimport();
+            }
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ComingSoonSignTexturePath);
+            if (tex == null) Debug.LogWarning($"[BMU VR Tour] Coming Soon sign texture missing at {ComingSoonSignTexturePath}.");
+            return tex;
+        }
+
+        private static Material GetOrCreateSignMaterial(string path, Texture2D tex)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                // Unlit so the sign stays readable whatever the lighting or time of day
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            if (tex != null) mat.mainTexture = tex;
+            mat.color = Color.white;
+            mat.enableInstancing = true;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
         private static void SetDepth(Transform t, float z)
         {
             if (t is RectTransform rt)
@@ -1763,6 +1915,9 @@ namespace BMU.VRTour.Editor
                     workshop.transform.localScale = Vector3.one * 1.75f;
                     workshop.transform.SetParent(envInstance.transform, true);       // same parent as the other campus buildings
                 }
+
+                // Remaining untextured massing boxes get a "COMING SOON" treatment until real models arrive.
+                ApplyComingSoonSigns(envInstance);
             }
             else
             {
