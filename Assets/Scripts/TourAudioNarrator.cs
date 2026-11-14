@@ -7,8 +7,9 @@ using TMPro;
 namespace BMU.VRTour
 {
     /// <summary>
-    /// Manages tour narration, subtitle captions, mute state, and animated waveform equalizer HUD.
-    /// Provides dynamic visual feedback for active vs muted audio states and procedural caption playback.
+    /// Manages tour narration, mute state, audio playback, and header audio toggle button.
+    /// Provides dynamic visual feedback for active vs muted audio states with tooltips and speaker icons.
+    /// Caption text and waveform visualizer bars are optional.
     /// </summary>
     public class TourAudioNarrator : MonoBehaviour
     {
@@ -121,7 +122,10 @@ namespace BMU.VRTour
             m_CurrentCaption = caption;
 
             if (m_TypewriterRoutine != null) StopCoroutine(m_TypewriterRoutine);
-            m_TypewriterRoutine = StartCoroutine(TypewriterCaption(caption));
+            if (m_CaptionText != null)
+            {
+                m_TypewriterRoutine = StartCoroutine(TypewriterCaption(caption));
+            }
 
             if (clip != null && m_AudioSource != null)
             {
@@ -181,27 +185,36 @@ namespace BMU.VRTour
             if (m_ToggleButtonText != null)
             {
                 m_ToggleButtonText.text = m_IsMuted ? "MUTED" : "VOICE";
+
+                Color targetBtnColor = m_IsMuted ? m_MutedButtonColor : m_ActiveButtonColor;
+                if (m_ToggleButtonImage != null)
+                {
+                    m_ToggleButtonImage.color = targetBtnColor;
+                }
+
+                if (m_AudioToggleButton != null)
+                {
+                    ColorBlock cb = m_AudioToggleButton.colors;
+                    cb.normalColor = targetBtnColor;
+                    cb.highlightedColor = Color.Lerp(targetBtnColor, Color.white, 0.35f);
+                    cb.selectedColor = cb.highlightedColor;
+                    m_AudioToggleButton.colors = cb;
+
+                    var feedback = m_AudioToggleButton.GetComponent<VRButtonFeedback>();
+                    if (feedback != null)
+                    {
+                        feedback.SetBaseColor(targetBtnColor);
+                    }
+                }
             }
 
-            // Audio toggle button background color: brand blue (#004B87) vs dark grey (#555555)
-            Color targetBtnColor = m_IsMuted ? m_MutedButtonColor : m_ActiveButtonColor;
-            if (m_ToggleButtonImage != null)
-            {
-                m_ToggleButtonImage.color = targetBtnColor;
-            }
-
+            // VRHeaderTooltip update
             if (m_AudioToggleButton != null)
             {
-                ColorBlock cb = m_AudioToggleButton.colors;
-                cb.normalColor = targetBtnColor;
-                cb.highlightedColor = Color.Lerp(targetBtnColor, Color.white, 0.35f);
-                cb.selectedColor = cb.highlightedColor;
-                m_AudioToggleButton.colors = cb;
-
-                var feedback = m_AudioToggleButton.GetComponent<VRButtonFeedback>();
-                if (feedback != null)
+                var tooltip = m_AudioToggleButton.GetComponent<VRHeaderTooltip>();
+                if (tooltip != null)
                 {
-                    feedback.SetBaseColor(targetBtnColor);
+                    tooltip.TooltipText = m_IsMuted ? "Unmute Audio" : "Mute Audio";
                 }
             }
 

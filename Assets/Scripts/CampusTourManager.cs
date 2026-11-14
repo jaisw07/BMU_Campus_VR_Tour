@@ -198,7 +198,9 @@ namespace BMU.VRTour
             var moveProviders = UnityEngine.Object.FindObjectsByType<ContinuousMoveProvider>(FindObjectsSortMode.None);
             foreach (var mp in moveProviders)
             {
+#pragma warning disable CS0618
                 mp.useGravity = false;
+#pragma warning restore CS0618
                 mp.enableFly = false;
                 mp.enabled = false;
             }
@@ -560,7 +562,11 @@ namespace BMU.VRTour
             if (m_Slides == null || m_Slides.Count == 0) return;
             CarouselSlideData slide = m_Slides[m_CurrentSlideIndex];
 
-            if (m_SlideBadgeText != null) m_SlideBadgeText.text = slide.badge;
+            if (m_SlideBadgeText != null)
+            {
+                m_SlideBadgeText.text = slide.badge;
+                m_SlideBadgeText.color = new Color(0.01f, 0.52f, 0.78f); // Theme sky blue
+            }
             if (m_SlideTitleText != null) m_SlideTitleText.text = slide.title;
             if (m_SlideDescText != null) m_SlideDescText.text = slide.description;
 
@@ -717,7 +723,7 @@ namespace BMU.VRTour
             {
                 m_BtnExploreInterior.gameObject.SetActive(data.hasInterior);
                 TextMeshProUGUI btnText = m_BtnExploreInterior.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "Go Inside";
+                if (btnText != null) btnText.text = "ENTER";
             }
 
             if (TourAudioNarrator.Instance != null)
@@ -752,7 +758,7 @@ namespace BMU.VRTour
             {
                 m_BtnExploreInterior.gameObject.SetActive(true);
                 TextMeshProUGUI btnText = m_BtnExploreInterior.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "Switch Room →";
+                if (btnText != null) btnText.text = "Switch Room";
             }
 
             if (TourAudioNarrator.Instance != null)
@@ -789,8 +795,8 @@ namespace BMU.VRTour
             string hubTitle = building == "gateway" ? "GATEWAY BUILDING • INTERIOR SPACES" : "NORTH BLOCK • INTERIOR SPACES";
             UpdateHeaderLocation(hubTitle);
 
-            if (m_InternalHubTag != null) m_InternalHubTag.text = hubTitle;
-            if (m_InternalHubTitle != null) m_InternalHubTitle.text = "Select an Interior Facility to Enter";
+            if (m_InternalHubTag != null) m_InternalHubTag.gameObject.SetActive(false);
+            if (m_InternalHubTitle != null) m_InternalHubTitle.text = "Select a Facility";
 
             PopulateRoomCards(building);
 
@@ -828,12 +834,70 @@ namespace BMU.VRTour
                 SetDescendantText(cardObj.transform, "Title", room.name);
                 SetDescendantText(cardObj.transform, "Badge", room.badge);
                 SetDescendantText(cardObj.transform, "Description", room.description);
+                Transform actionPill = cardObj.transform.Find("ActionPill");
+                if (actionPill != null) actionPill.gameObject.SetActive(false);
 
-                Button btn = cardObj.GetComponentInChildren<Button>();
+                // Ensure center alignment and Truncate overflow
+                TextMeshProUGUI titleTmp = cardObj.transform.Find("TextStack/Title")?.GetComponent<TextMeshProUGUI>();
+                if (titleTmp != null) titleTmp.alignment = TextAlignmentOptions.Center;
+                TextMeshProUGUI descTmp = cardObj.transform.Find("TextStack/Description")?.GetComponent<TextMeshProUGUI>();
+                if (descTmp != null)
+                {
+                    descTmp.alignment = TextAlignmentOptions.Center;
+                    descTmp.overflowMode = TextOverflowModes.Truncate;
+                }
+
+                // Bind matching interior photo
+                Transform photoTr = cardObj.transform.Find("PhotoContainer/CardPhoto") ?? cardObj.transform.Find("CardPhoto");
+                if (photoTr != null)
+                {
+                    Image photoImg = photoTr.GetComponent<Image>();
+                    if (photoImg != null && room.photo != null)
+                    {
+                        photoImg.sprite = room.photo;
+                        photoImg.color = Color.white;
+                    }
+                }
+
+                // Category color badge chip styling
+                Transform badgePillTr = cardObj.transform.Find("BadgePill");
+                if (badgePillTr != null)
+                {
+                    Image badgeImg = badgePillTr.GetComponent<Image>();
+                    if (badgeImg != null)
+                    {
+                        if (buildingKey == "north-block")
+                            badgeImg.color = new Color(0f, 0.17f, 0.29f); // #002B49 BMU Navy
+                        else if (buildingKey == "gateway")
+                            badgeImg.color = new Color(0.01f, 0.52f, 0.78f); // #0284C7 Natural Sky Blue
+                        else
+                            badgeImg.color = new Color(0.89f, 0.11f, 0.14f); // #E31B23 BMU Crimson
+                    }
+
+                    TextMeshProUGUI bTmp = badgePillTr.GetComponentInChildren<TextMeshProUGUI>();
+                    if (bTmp != null)
+                    {
+                        bTmp.text = room.badge;
+                        RectTransform bpRt = badgePillTr.GetComponent<RectTransform>();
+                        if (bpRt != null)
+                        {
+                            bpRt.sizeDelta = new Vector2(bTmp.preferredWidth + 24f, bpRt.sizeDelta.y);
+                        }
+                    }
+                }
+
+                Button btn = cardObj.GetComponent<Button>() ?? cardObj.GetComponentInChildren<Button>();
                 if (btn != null)
                 {
                     string rKey = room.key;
                     btn.onClick.AddListener(() => TeleportToLocation(rKey));
+                }
+
+                // Re-initialize VRButtonFeedback resting position after layout
+                VRButtonFeedback fb = cardObj.GetComponent<VRButtonFeedback>();
+                if (fb != null)
+                {
+                    fb.InitializeRestingPosition();
                 }
             }
         }

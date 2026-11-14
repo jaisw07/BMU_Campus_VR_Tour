@@ -207,6 +207,96 @@ namespace BMU.VRTour.Editor
                 }
 
                 // -------------------------------------------------------------
+                // 6b. Verify Starter Assets & Hands Interaction Demo sample 3.3.2 from com.unity.xr.interaction.toolkit
+                // -------------------------------------------------------------
+                try
+                {
+                    string oldSampleDir = "Assets/Samples/XR Interaction Toolkit/3.0.7";
+                    if (Directory.Exists(oldSampleDir) || AssetDatabase.IsValidFolder(oldSampleDir))
+                    {
+                        AssetDatabase.DeleteAsset(oldSampleDir);
+                        Debug.Log("[XRSetup] Removed obsolete Starter Assets 3.0.7 directory.");
+                    }
+                    string starterSampleDir = "Assets/Samples/XR Interaction Toolkit/3.3.2/Starter Assets";
+                    string handsSampleDir = "Assets/Samples/XR Interaction Toolkit/3.3.2/Hands Interaction Demo";
+                    if (!Directory.Exists(starterSampleDir) || !Directory.Exists(handsSampleDir))
+                    {
+                        var xriSamples = Sample.FindByPackage("com.unity.xr.interaction.toolkit", string.Empty);
+                        if (xriSamples != null)
+                        {
+                            foreach (var sample in xriSamples)
+                            {
+                                if (sample.displayName == "Starter Assets" && !Directory.Exists(starterSampleDir))
+                                {
+                                    sample.Import(Sample.ImportOptions.OverridePreviousImports);
+                                    Debug.Log("[XRSetup] Successfully imported Starter Assets 3.3.2 sample.");
+                                }
+                                else if (sample.displayName == "Hands Interaction Demo" && !Directory.Exists(handsSampleDir))
+                                {
+                                    sample.Import(Sample.ImportOptions.OverridePreviousImports);
+                                    Debug.Log("[XRSetup] Successfully imported Hands Interaction Demo 3.3.2 sample.");
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("[XRSetup] Verified Starter Assets and Hands Interaction Demo 3.3.2 are present.");
+                    }
+                }
+                catch (Exception xriSampleEx)
+                {
+                    Debug.LogWarning($"[XRSetup] Could not verify Starter Assets / Hands sample: {xriSampleEx.Message}");
+                }
+
+                // -------------------------------------------------------------
+                // 6c. Fix URP Composition Layers settings (HDR & PostProcess Alpha)
+                // -------------------------------------------------------------
+                try
+                {
+                    string[] urpAssetPaths = new[] { "Assets/Settings/Mobile_RPAsset.asset", "Assets/Settings/PC_RPAsset.asset" };
+                    foreach (var path in urpAssetPaths)
+                    {
+                        var urpAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset>(path);
+                        if (urpAsset != null)
+                        {
+                            var so = new SerializedObject(urpAsset);
+                            var hdrProp = so.FindProperty("m_SupportsHDR");
+                            var alphaProp = so.FindProperty("m_AllowPostProcessAlphaOutput");
+                            var prefilterProp = so.FindProperty("m_PrefilterAlphaOutput");
+                            bool modified = false;
+
+                            if (hdrProp != null && hdrProp.boolValue)
+                            {
+                                hdrProp.boolValue = false;
+                                modified = true;
+                            }
+                            if (alphaProp != null && !alphaProp.boolValue)
+                            {
+                                alphaProp.boolValue = true;
+                                modified = true;
+                            }
+                            if (prefilterProp != null && !prefilterProp.boolValue)
+                            {
+                                prefilterProp.boolValue = true;
+                                modified = true;
+                            }
+
+                            if (modified)
+                            {
+                                so.ApplyModifiedProperties();
+                                EditorUtility.SetDirty(urpAsset);
+                                Debug.Log($"[XRSetup] Updated URP settings on {path}: supportsHDR=false, allowPostProcessAlphaOutput=true");
+                            }
+                        }
+                    }
+                }
+                catch (Exception urpEx)
+                {
+                    Debug.LogWarning($"[XRSetup] Could not update URP asset settings: {urpEx.Message}");
+                }
+
+                // -------------------------------------------------------------
                 // 7. Interaction Layer 31 -> 'Teleport' via SerializedObject
                 // -------------------------------------------------------------
                 try

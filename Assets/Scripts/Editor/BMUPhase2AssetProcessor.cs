@@ -11,18 +11,16 @@ namespace BMU.VRTour.Editor
         {
             Debug.Log("[Phase 2] Starting Glassmorphism & Token Alignment Setup...");
 
-            string uiDir = "Assets/Textures/UI";
-            if (!Directory.Exists(uiDir))
-            {
-                Debug.LogError($"[Phase 2] UI directory not found: {uiDir}");
-                return;
-            }
-
-            string[] files = Directory.GetFiles(uiDir, "*.png");
+            string[] targetDirs = new string[] { "Assets/Textures/UI", "Assets/Resources/UI" };
             int configuredCount = 0;
 
-            foreach (string file in files)
+            foreach (string uiDir in targetDirs)
             {
+                if (!Directory.Exists(uiDir)) continue;
+
+                string[] files = Directory.GetFiles(uiDir, "*.png");
+                foreach (string file in files)
+                {
                 string assetPath = file.Replace('\\', '/');
                 TextureImporter uiImp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
                 if (uiImp == null)
@@ -44,6 +42,10 @@ namespace BMU.VRTour.Editor
                 if (fn.Contains("circle"))
                 {
                     uiImp.spriteBorder = Vector4.zero;
+                }
+                else if (fn.Contains("glow"))
+                {
+                    uiImp.spriteBorder = new Vector4(24, 24, 24, 24);
                 }
                 else if (fn.Contains("pill"))
                 {
@@ -74,13 +76,14 @@ namespace BMU.VRTour.Editor
                     uiImp.spriteBorder = new Vector4(16, 16, 16, 16);
                 }
 
-                EditorUtility.SetDirty(uiImp);
-                uiImp.SaveAndReimport();
-                configuredCount++;
+                    EditorUtility.SetDirty(uiImp);
+                    uiImp.SaveAndReimport();
+                    configuredCount++;
+                }
             }
 
             AssetDatabase.Refresh();
-            Debug.Log($"[Phase 2] Successfully configured and reimported {configuredCount} UI sprites in {uiDir}.");
+            Debug.Log($"[Phase 2] Successfully configured and reimported {configuredCount} UI sprites across target directories.");
         }
     }
 }

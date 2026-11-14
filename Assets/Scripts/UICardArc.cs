@@ -7,6 +7,7 @@ namespace BMU.VRTour
     /// turn to face the user and sit slightly closer. Only depth (z) and yaw are touched, which
     /// lets it sit alongside a HorizontalLayoutGroup that owns x/y. Works with cards spawned at
     /// runtime (e.g. interior room cards) because it re-evaluates every frame.
+    /// Supports dynamic 3D depth translation from VRButtonFeedback on hover.
     /// </summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
@@ -28,10 +29,14 @@ namespace BMU.VRTour
                 float z = m_Radius * (Mathf.Cos(angle) - 1f); // negative = toward the viewer
                 Quaternion yaw = Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 0f);
 
+                var feedback = child.GetComponent<VRButtonFeedback>();
+                float extraZ = feedback != null ? feedback.CurrentHoverZOffset : 0f;
+                float finalZ = z + extraZ;
+
                 // Only write when changed, to avoid re-batching the canvas every frame
-                if (Mathf.Abs(p.z - z) > 0.01f)
+                if (Mathf.Abs(p.z - finalZ) > 0.01f)
                 {
-                    p.z = z;
+                    p.z = finalZ;
                     child.localPosition = p;
                 }
                 if (Quaternion.Angle(child.localRotation, yaw) > 0.01f)

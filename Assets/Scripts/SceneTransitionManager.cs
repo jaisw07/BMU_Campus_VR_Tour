@@ -83,17 +83,17 @@ namespace BMU.VRTour
         {
             if (m_XROrigin == null)
             {
-                m_XROrigin = UnityEngine.Object.FindAnyObjectByType<XROrigin>();
+                m_XROrigin = UnityEngine.Object.FindAnyObjectByType<XROrigin>(FindObjectsInactive.Include);
             }
 
             if (m_CharacterController == null && m_XROrigin != null)
             {
-                m_CharacterController = m_XROrigin.GetComponent<CharacterController>();
+                m_CharacterController = m_XROrigin.GetComponent<CharacterController>() ?? m_XROrigin.GetComponentInChildren<CharacterController>(true);
             }
 
             if (m_ScreenFade == null)
             {
-                m_ScreenFade = ScreenFade.Instance != null ? ScreenFade.Instance : UnityEngine.Object.FindAnyObjectByType<ScreenFade>();
+                m_ScreenFade = ScreenFade.Instance != null ? ScreenFade.Instance : UnityEngine.Object.FindAnyObjectByType<ScreenFade>(FindObjectsInactive.Include);
             }
         }
 
