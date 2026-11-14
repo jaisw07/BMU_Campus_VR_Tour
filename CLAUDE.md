@@ -1,7 +1,7 @@
 # BMU Campus VR Tour
 
 Unity VR walkthrough of BML Munjal University, built to run standalone on the **Meta Quest 3S** (Android, OpenXR).
-- Unity **6000.3.27f2**, URP 17.3, XR Interaction Toolkit 3.0.7, XR Hands, OpenXR + Meta OpenXR, glTFast, TextMeshPro, uGUI.
+- Unity **6000.3.28f1**, URP 17.3, XR Interaction Toolkit 3.3.2, XR Hands, OpenXR + Meta OpenXR, glTFast, TextMeshPro, uGUI.
 - All project code is in `Assets/Scripts/` (namespace `BMU.VRTour`) and `Assets/Scripts/Editor/` (namespace `BMU.VRTour.Editor`). There are no asmdefs, so everything compiles into Assembly-CSharp.
 - Longer docs: `Assets/Documentation/PROJECT_DEVELOPER_GUIDE.md` (architecture, Blender→GLB pipeline, anchor table) and `PLAN.md` (the original Figma-driven phase plan). Their `file:///C:/Users/SHREY/...` links point to the original author's Windows machine; read them as repo-relative paths.
 
@@ -59,6 +59,6 @@ UI and comfort scripts: `LazyFollowUI`, `CurvedUILayout`, `MinimizedDockOrb`, `V
 - `Assets/Samples/`, `Assets/TextMesh Pro/` and `Assets/TutorialInfo/` are vendor or template content. Don't edit them.
 
 ## Workflow notes
-- Development happens on Linux here, while the original authoring was on Windows. The local, uncommitted `Packages/manifest.json` change adds `com.unity.toolchain.linux-x86_64-linux`. Ask before committing it.
+- Development happens on Linux here, while the original authoring was on Windows. On Linux the editor adds `com.unity.toolchain.linux-x86_64-linux` and `com.unity.sdk.linux-x86_64` to `Packages/manifest.json` locally. Teammates are on Windows, so ask before committing that.
 - There are no tests yet (the test-framework package is installed but unused). Verify in the Editor with the XR Device Simulator, or with a Quest build (Android, ASTC).
 - A Unity MCP skill (`unity-mcp-orchestrator`) is available for driving the Editor when it's connected.
