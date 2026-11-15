@@ -35,16 +35,20 @@ UI and comfort scripts: `LazyFollowUI`, `CurvedUILayout`, `MinimizedDockOrb`, `V
 | `outside-north-block` | `Anchor_NorthBlock_Plaza` |
 | `outside-gateway` | `Anchor_Gateway_Plaza` |
 | `outside-workshop` | `Anchor_Workshop_Plaza` (no interiors) |
-| `nb-classroom` / `nb-lab` / `nb-faculty` | `RoomPod_SmartClassroom` / `RoomPod_RoboticsLab` / `RoomPod_FacultyCabins` |
-| `gw-classroom` / `gw-lab` | `RoomPod_ExecutiveMBASeminar` / `RoomPod_ACICStartupIncubator` |
+| `nb-classroom` / `nb-classroom-2` / `nb-lab` / `nb-faculty` | `RoomPod_SmartClassroom` (NB-105 GLB) / `RoomPod_StandardClassroom` (a classroom of the NB building) / `RoomPod_RoboticsLab` / `RoomPod_FacultyCabins` |
+| `gw-lab` / `gw-office` / `gw-auditorium` | `RoomPod_ARVRLab` (`GA_Lab`) / `RoomPod_ProgramOffice` (`GA_Office`) / `RoomPod_Auditorium` (`GA_Auditorium`), all built by `GALabSetup` / `GAOfficeSetup` / `GAAuditoriumSetup` under `Gateway_Interior` |
 
 - Building keys: `north-block`, `gateway`, `workshop`.
 - Room keys get their building from the prefix: `nb-` or `gw-`.
+- Room cards are generated at runtime from `CampusTourManager.m_Rooms` (by `buildingKey`), so adding a room = a `RoomData` entry + a `RoomPodAnchorController` with the same key + a photo. The photo list is index-aligned in two places: `locKeys` in `CampusTourManager.InitializeTourData()` and `BMUTourSceneBuilder.LoadLocationPhotos()` (menu **Sync Room Photos Into Master Scene** applies it without rebuilding).
+- `Scene_NorthBlock_Interiors` has baked lightmaps, so do not rebuild it to add a pod: use **Add Standard Classroom Pod To Open NB Interior Scene** style in-place edits.
 - Lookups use `GameObject.Find` by name (`SceneTransitionManager.FindExteriorAnchor` and `FindRoomAnchor`), or match `RoomPodAnchorController.PodKey`. So renaming a GameObject or a key silently breaks teleporting.
 - The pod names in the developer guide (e.g. `RoomPod_AdvancedRoboticsLab`) are out of date. The names in the code above are the real ones.
 
 ## Conventions and constraints
 - Teleport anchors and pads go on **layer 31 (Teleport)**, which is the only layer teleport rays hit. All environment geometry stays on layer 0. Teleporting only to curated anchors is intentional.
+- **Correction:** the VR "Teleport Interactor" ray mask is Default + UI + Teleport (not Teleport only) and it takes only the CLOSEST hit, so walls, desks and glass on Default block the ray. Furniture, glass and ceilings in the Gateway rooms are therefore on **layer 30** (`GALabSetup.TeleportRayIgnoreLayer`): they still collide with the player but the ray passes through. Walls/floors stay on Default so rooms still block it. Layer 30 is otherwise unused.
+- In VR the rig has **no thumbstick/grab locomotion** (the builder switches it off), so every room needs curated teleport anchors to be walkable. The Gateway rooms get theirs from `GALabSetup.AddTeleportAnchors` (`TP_*` pads: 5 lab, 9 auditorium incl. the stage, 13 office incl. one per cabin). The builder's pad uses a cylinder primitive whose capsule collider becomes a big invisible sphere when squashed; that helper swaps it for a flat box.
 - The exterior is at **0.5x scale**. Anchor coordinates are listed in §7 of the developer guide. The out-of-bounds floor sits at y = -5.
 - Quest budget: fewer than 150 draw calls, 72 FPS minimum (90 is the target). Merge repeated meshes, use static batching, use MeshColliders only where they're needed.
 - GLBs must not use WebP textures, because glTFast rejects `EXT_texture_webp`. Export PNG or JPEG.

@@ -102,7 +102,7 @@ namespace BMU.VRTour
             m_ZonePresets.Add(new ZoneEnvironmentData
             {
                 zoneKey = "nb-classroom",
-                displayName = "North Block: Smart Classroom",
+                displayName = "North Block: Smart Case Study Room",
                 skyTopColor = new Color(0.77f, 0.86f, 0.94f),
                 skyHorizonColor = new Color(0.86f, 0.92f, 0.97f),
                 groundColor = new Color(0.66f, 0.72f, 0.78f)
@@ -112,7 +112,7 @@ namespace BMU.VRTour
             m_ZonePresets.Add(new ZoneEnvironmentData
             {
                 zoneKey = "nb-lab",
-                displayName = "North Block: Engineering Lab",
+                displayName = "North Block: AR-VR Lab",
                 skyTopColor = new Color(0.72f, 0.83f, 0.93f),
                 skyHorizonColor = new Color(0.83f, 0.90f, 0.96f),
                 groundColor = new Color(0.55f, 0.63f, 0.70f)
@@ -182,9 +182,10 @@ namespace BMU.VRTour
 
             m_CurrentZoneKey = zoneKey;
             ZoneEnvironmentData data = m_ZonePresets.Find(z => z.zoneKey == zoneKey);
-            if (data == null && zoneKey.StartsWith("ws-"))
+            if (data == null && (zoneKey.StartsWith("ws-") || zoneKey.StartsWith("nb-") || zoneKey.StartsWith("gw-")))
             {
-                // The workshop interior is real 3D with no photosphere preset: leave the environment untouched.
+                // Interior rooms that are real 3D with no photosphere preset (workshop, extra NB / Gateway rooms): leave the
+                // environment untouched instead of falling back to the first preset (the front gate).
                 onDone?.Invoke();
                 return;
             }
