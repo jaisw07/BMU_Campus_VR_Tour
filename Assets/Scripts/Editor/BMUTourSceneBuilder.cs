@@ -1189,19 +1189,52 @@ namespace BMU.VRTour.Editor
 
             SetPrivateField(tourManager, "m_SlidePhotoSets", sets);
 
-            // Location Photos
-            Sprite[] locSprites = new Sprite[] {
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_front_gate.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_north_block.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_classroom.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_lab.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_faculty.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_gateway.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_gw_classroom.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_gw_lab.jpg"),
-                AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_workshop.jpg")
-            };
+            // Location / room photos (same keys and order as CampusTourManager.InitializeTourData locKeys)
+            Sprite[] locSprites = LoadLocationPhotos();
             SetPrivateField(tourManager, "m_LocationPhotoSprites", locSprites);
+        }
+
+        /// <summary>Photos for the hub / room cards. KEEP IN SYNC with CampusTourManager's locKeys: same keys, same order.</summary>
+        private static Sprite[] LoadLocationPhotos()
+        {
+            string[] files =
+            {
+                "zone_front_gate",            // front-gate
+                "zone_outside_north_block",   // outside-north-block
+                "zone_nb_classroom",          // nb-classroom (NB-105)
+                "zone_nb_classroom_2",        // nb-classroom-2 (standard classroom)
+                "zone_nb_lab",                // nb-lab
+                "zone_nb_faculty",            // nb-faculty
+                "zone_outside_gateway",       // outside-gateway
+                "zone_gw_arvr_lab",           // gw-lab (GA_Lab)
+                "zone_gw_program_office",     // gw-office (GA_Office)
+                "zone_gw_auditorium",         // gw-auditorium (GA_Auditorium)
+                "zone_outside_workshop"       // outside-workshop
+            };
+            var sprites = new Sprite[files.Length];
+            for (int i = 0; i < files.Length; i++)
+                sprites[i] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/" + files[i] + ".jpg");
+            return sprites;
+        }
+
+        /// <summary>Re-applies the room photo list to the CampusTourManager in Master_Tour_Core without rebuilding the scene.</summary>
+        [MenuItem("BMU VR Tour/Sync Room Photos Into Master Scene", false, 21)]
+        public static void SyncRoomPhotosIntoMasterScene()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            var scene = EditorSceneManager.OpenScene("Assets/Scenes/Master_Tour_Core.unity", OpenSceneMode.Single);
+            var tm = UnityEngine.Object.FindFirstObjectByType<CampusTourManager>();
+            if (tm == null) { Debug.LogError("[BMU VR Tour] CampusTourManager not found in Master_Tour_Core."); return; }
+            SerializedObject so = new SerializedObject(tm);
+            SerializedProperty arr = so.FindProperty("m_LocationPhotoSprites");
+            Sprite[] sprites = LoadLocationPhotos();
+            arr.arraySize = sprites.Length;
+            int missing = 0;
+            for (int i = 0; i < sprites.Length; i++) { arr.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i]; if (sprites[i] == null) missing++; }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"[BMU VR Tour] Synced {sprites.Length} location photos into Master_Tour_Core ({missing} missing).");
         }
 
         private static GameObject CreatePanel(string name, Transform parent, Color color, float width, float height, Sprite sprite = null)
@@ -1985,6 +2018,9 @@ namespace BMU.VRTour.Editor
                     workshop.transform.SetParent(envInstance.transform, true);       // same parent as the other campus buildings
                 }
 
+                // The Gateway replaces the 'GA_GB' massing box (placement/scale/materials/colliders live in CampusEnvironmentSetup).
+                CampusEnvironmentSetup.PlaceGateway(envInstance.transform);
+
                 // Remaining untextured massing boxes get a "COMING SOON" treatment until real models arrive.
                 ApplyComingSoonSigns(envInstance);
             }
@@ -2048,6 +2084,22 @@ namespace BMU.VRTour.Editor
 
         public static void BuildNorthBlockInteriorsScene()
         {
+            // The real North Block interior (Assets/Models/Interior/NB-Building) replaces the placeholder pods. It is built by
+            // NBBuildingInteriorSetup with RoomPod_SmartClassroom / RoomPod_RoboticsLab (AR-VR lab) / RoomPod_FacultyCabins so
+            // the navigator keys nb-classroom / nb-lab / nb-faculty keep working. NOTE: lightmaps are baked per scene, so this
+            // scene needs 'Lighting > Generate Lighting' again after every rebuild.
+            if (NBBuildingInteriorSetup.SourcesAvailable)
+            {
+                if (NBBuildingInteriorSetup.TourSceneIsCurrent())
+                {
+                    Debug.Log("[BMU VR Tour] Scene_NorthBlock_Interiors already holds the baked NB building - keeping it. " +
+                              "Use 'BMU VR Tour > Build North Block Interiors Scene (NB-Building)' to regenerate (then bake again).");
+                    return;
+                }
+                NBBuildingInteriorSetup.BuildTourScene();
+                return;
+            }
+
             const string scenePath = "Assets/Scenes/Scene_NorthBlock_Interiors.unity";
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -2061,7 +2113,7 @@ namespace BMU.VRTour.Editor
             fillLightObj.transform.rotation = Quaternion.Euler(60f, 0f, 0f);
 
             // 1. Smart Tiered Classroom (Pod 1 at 0, 0, 0)
-            CreateCubeRoomPod(null, "RoomPod_SmartClassroom", "nb-classroom", "North Block • Smart Tiered Classroom",
+            CreateCubeRoomPod(null, "RoomPod_SmartClassroom", "nb-classroom", "North Block • Smart Case Study Room",
                 new Vector3(0f, 0f, 0f),
                 new Color(0.94f, 0.92f, 0.88f),
                 new Color(0.25f, 0.28f, 0.32f),
@@ -2109,27 +2161,18 @@ namespace BMU.VRTour.Editor
             fillLight.shadows = LightShadows.None;
             fillLightObj.transform.rotation = Quaternion.Euler(60f, 0f, 0f);
 
-            // 1. Executive MBA Seminar Room (Pod 1 at 0, 0, 0)
-            CreateCubeRoomPod(null, "RoomPod_ExecutiveMBASeminar", "gw-classroom", "Gateway • Executive MBA Seminar Room",
-                new Vector3(0f, 0f, 0f),
-                new Color(0.92f, 0.92f, 0.95f),
-                new Color(0.18f, 0.22f, 0.30f),
-                new Vector3(14f, 4.2f, 12f),
-                "Anchor_Seminar_Center", new Vector3(0f, 0f, -2f),
-                "Anchor_Seminar_Boardroom", new Vector3(0f, 0f, 2.5f),
-                RoomPropStyle.Seminar);
+            // The two placeholder cube pods (Executive MBA Seminar / ACIC Incubator) are gone: the Gateway rooms are now the real 3D
+            // GA_Lab (gw-lab), GA_Office (gw-office) and GA_Auditorium (gw-auditorium), each with its own RoomPod_* navigator pod.
 
-            // 2. ACIC Startup Incubator Lab (Pod 2 at 60, 0, 0)
-            CreateCubeRoomPod(null, "RoomPod_ACICStartupIncubator", "gw-lab", "Gateway • ACIC Startup Incubator Lab",
-                new Vector3(60f, 0f, 0f),
-                new Color(0.95f, 0.95f, 0.95f),
-                new Color(0.28f, 0.30f, 0.32f),
-                new Vector3(14f, 4.2f, 12f),
-                "Anchor_Incubator_Center", new Vector3(0f, 0f, -2f),
-                "Anchor_Incubator_MakerBay", new Vector3(3.5f, 0f, 2.5f),
-                RoomPropStyle.Incubator);
+            // Gateway computer lab (GA_Lab.glb at 0.5x) under a Gateway_Interior root: colliders, lights, probes, desktop test player.
+            GALabSetup.InstallInGatewayScene(null);
+            // 4. Gateway auditorium (GA_Auditorium.glb at 0.5x), next to GA_Lab under the same Gateway_Interior root.
+            GAAuditoriumSetup.InstallInGatewayScene(null);
+            // 5. Gateway office (GA_Office.glb at 0.5x), next to GA_Lab and GA_Auditorium.
+            GAOfficeSetup.InstallInGatewayScene(null);
 
             EditorSceneManager.SaveScene(scene, scenePath);
+            GALabSetup.ComputeOcclusion(scene, null);
             AssetDatabase.SaveAssets();
             Debug.Log("[BMU VR Tour] Scene_Gateway_Interiors.unity built successfully.");
         }
@@ -2142,8 +2185,7 @@ namespace BMU.VRTour.Editor
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_Campus_Exterior.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_NorthBlock_Interiors.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/Scene_Gateway_Interiors.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/BMU_Workshop_Interior.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/SampleScene.unity", false)
+                new EditorBuildSettingsScene("Assets/Scenes/BMU_Workshop_Interior.unity", true)
             };
             EditorBuildSettings.scenes = scenes;
             Debug.Log("[BMU VR Tour] Configured EditorBuildSettings with 4 active tour scenes.");
@@ -2451,7 +2493,7 @@ namespace BMU.VRTour.Editor
             bldg.GetComponent<MeshRenderer>().sharedMaterial = bldgMat;
         }
 
-        private static GameObject CreateTeleportAnchor(string name, Vector3 position, Quaternion rotation, Transform parent, Color padColor)
+        internal static GameObject CreateTeleportAnchor(string name, Vector3 position, Quaternion rotation, Transform parent, Color padColor)
         {
             GameObject anchorObj = new GameObject(name);
             if (parent != null) anchorObj.transform.SetParent(parent, false);

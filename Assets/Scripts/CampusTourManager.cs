@@ -373,22 +373,33 @@ namespace BMU.VRTour
             {
                 key = "nb-classroom",
                 buildingKey = "north-block",
-                name = "Smart Tiered Classroom",
-                badge = "INTERACTIVE PEDAGOGY",
-                description = "Tiered amphitheater seating with dual smartboards, acoustic treatment, and hybrid broadcast cameras for collaborative lectures.",
-                highlights = new[] { "• Tiered Amphitheater Seating", "• Dual Interactive Smartboards", "• Lecture Capture Studio" },
-                narration = "Inside the North Block smart classroom, amphitheater seating and multimedia displays encourage dynamic faculty-student discussions."
+                name = "Smart Case Study Room (NB-105)",
+                badge = "CASE-BASED LEARNING",
+                description = "A tiered case-study classroom: rows of desks rise in four tiers facing the front whiteboard and wall display, so every seat has a clear view for discussion.",
+                highlights = new[] { "• Four-Tier Desk Rows", "• Front Whiteboard & Wall Display", "• Podium for Case Presentations" },
+                narration = "This is NB-105, the smart case study room, where tiered seating gives every student a clear view for case discussions."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "nb-classroom-2",
+                buildingKey = "north-block",
+                name = "Standard Classroom",
+                badge = "LECTURE LEARNING",
+                description = "A standard lecture classroom with rows of desks facing the front whiteboard, used for everyday lectures, tutorials and student presentations.",
+                highlights = new[] { "• Row-Based Desk Seating", "• Front Whiteboard", "• Everyday Lectures & Tutorials" },
+                narration = "This is one of the North Block's standard classrooms, where everyday lectures and tutorials take place."
             });
 
             m_Rooms.Add(new RoomData
             {
                 key = "nb-lab",
                 buildingKey = "north-block",
-                name = "AI & Robotics Laboratory",
-                badge = "HIGH-PERFORMANCE COMPUTING",
-                description = "Equipped with high-performance GPU workstations, robotics testing tracks, and embedded hardware benches for student research.",
-                highlights = new[] { "• NVIDIA GPU Workstations", "• Robotics Prototyping Track", "• IoT Development Benches" },
-                narration = "This engineering laboratory offers GPU computing clusters, robotics benches, and IoT stations for student capstone projects."
+                name = "AR-VR Laboratory",
+                badge = "IMMERSIVE TECHNOLOGY",
+                description = "A workstation laboratory for augmented and virtual reality development, with rows of high-performance computers for student projects.",
+                highlights = new[] { "• AR / VR Development Workstations", "• Row-Based Computer Stations", "• Student Project Space" },
+                narration = "This is the AR-VR laboratory, where students build augmented and virtual reality projects on rows of high-performance workstations."
             });
 
             m_Rooms.Add(new RoomData
@@ -402,26 +413,38 @@ namespace BMU.VRTour
                 narration = "On the 4th floor, professors maintain an accessible open-door policy, providing dedicated 1-on-1 mentorship to students."
             });
 
-            m_Rooms.Add(new RoomData
-            {
-                key = "gw-classroom",
-                buildingKey = "gateway",
-                name = "Executive MBA Seminar Room",
-                badge = "MANAGEMENT & LEADERSHIP",
-                description = "Horseshoe boardroom layout tailored for case studies, executive masterclasses, and international video conferences.",
-                highlights = new[] { "• Horseshoe Conference Layout", "• International Video Conferencing", "• Syndicate Breakout Lounges" },
-                narration = "This executive classroom hosts corporate guest lectures, MBA case discussions, and international seminars."
-            });
-
+            // Gateway Building: three interior spaces (GA_Lab, GA_Office, GA_Auditorium in Scene_Gateway_Interiors).
             m_Rooms.Add(new RoomData
             {
                 key = "gw-lab",
                 buildingKey = "gateway",
-                name = "ACIC Startup Incubator Lab",
-                badge = "NITI AAYOG INCUBATION",
-                description = "BMU's government-backed startup incubator providing seed capital, patent guidance, and maker spaces for student ventures.",
-                highlights = new[] { "• Seed Capital & Venture Grants", "• Rapid Prototyping 3D Printers", "• Hero Group Executive Network" },
-                narration = "At the ACIC startup incubation center, student founders receive seed grants, patent advice, and corporate mentorship."
+                name = "AR-VR Lab",
+                badge = "AR-VR & COMPUTING",
+                description = "A computer laboratory with rows of student workstations, a teaching station and a projector screen for augmented and virtual reality development and practical sessions.",
+                highlights = new[] { "• Row-Based Computer Workstations", "• Teaching Station & Projector Screen", "• AR / VR Practical Sessions" },
+                narration = "This is the AR-VR lab, where students work on rows of computer workstations for augmented and virtual reality projects."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "gw-office",
+                buildingKey = "gateway",
+                name = "Program Office",
+                badge = "STUDENT SERVICES",
+                description = "The program office: a reception lobby leads into an open-plan office with workstations and glass-walled cabins for programme coordinators.",
+                highlights = new[] { "• Reception Lobby", "• Open-Plan Workstations", "• Glass-Walled Coordinator Cabins" },
+                narration = "This is the program office, where students are welcomed in the reception lobby and programme coordinators work in the open office and glass cabins."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "gw-auditorium",
+                buildingKey = "gateway",
+                name = "Auditorium",
+                badge = "EVENTS & LECTURES",
+                description = "A tiered auditorium with 360 seats, a raised stage with truss lighting and a projection screen for guest lectures, seminars and campus events.",
+                highlights = new[] { "• 360 Tiered Seats", "• Raised Stage with Truss Lighting", "• Projection Screen" },
+                narration = "This is the Gateway auditorium, with tiered seating for 360 people, a raised stage and a projection screen for lectures and events."
             });
 
             m_Rooms.Add(new RoomData
@@ -457,9 +480,10 @@ namespace BMU.VRTour
             }
 
             // Bind Photographic Sprites to Locations & Rooms
+            // KEEP IN SYNC with BMUTourSceneBuilder.LoadLocationPhotos(): same keys, same order (index-aligned).
             string[] locKeys = new string[] {
-                "front-gate", "outside-north-block", "nb-classroom", "nb-lab", "nb-faculty",
-                "outside-gateway", "gw-classroom", "gw-lab", "outside-workshop"
+                "front-gate", "outside-north-block", "nb-classroom", "nb-classroom-2", "nb-lab", "nb-faculty",
+                "outside-gateway", "gw-lab", "gw-office", "gw-auditorium", "outside-workshop"
             };
             for (int i = 0; i < locKeys.Length; i++)
             {
