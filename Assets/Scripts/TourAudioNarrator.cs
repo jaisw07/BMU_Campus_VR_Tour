@@ -16,9 +16,6 @@ namespace BMU.VRTour
         private static TourAudioNarrator s_Instance;
         public static TourAudioNarrator Instance => s_Instance;
 
-        [Header("Audio Components")]
-        [SerializeField] private AudioSource m_AudioSource;
-
         [Header("HUD Elements")]
         [SerializeField] private TextMeshProUGUI m_CaptionText;
         [SerializeField] private Button m_AudioToggleButton;
@@ -39,10 +36,13 @@ namespace BMU.VRTour
         [SerializeField] private Color m_ActiveButtonColor = new Color(0f, 0.294f, 0.529f, 1f);     // #004B87
         [SerializeField] private Color m_MutedButtonColor = new Color(0.333f, 0.333f, 0.333f, 1f);    // #555555
 
-        private bool m_IsMuted = false;
-        private bool m_IsPlaying = false;
+        private VoiceoverManager m_Voice;
         private string m_CurrentCaption = "";
         private Coroutine m_TypewriterRoutine;
+
+        // Mute state and playback live in VoiceoverManager (persisted in PlayerPrefs).
+        private bool m_IsMuted => m_Voice != null && m_Voice.IsMuted;
+        private bool m_IsPlaying => m_Voice != null && m_Voice.IsPlaying;
 
         public bool IsMuted => m_IsMuted;
 
@@ -51,7 +51,7 @@ namespace BMU.VRTour
             if (s_Instance == null) s_Instance = this;
             else { Destroy(gameObject); return; }
 
-            if (m_AudioSource == null) m_AudioSource = GetComponent<AudioSource>();
+            m_Voice = VoiceoverManager.EnsureInstance(gameObject);
         }
 
         private void Start()
@@ -117,7 +117,11 @@ namespace BMU.VRTour
             }
         }
 
-        public void PlayNarration(string caption, AudioClip clip = null)
+        /// <summary>
+        /// Single trigger point for tour narration. A null clip stops any voiceover that is still playing
+        /// (e.g. a state with no recording), so a previous panel's audio never carries over.
+        /// </summary>
+        public void PlayNarration(string caption, AudioClip clip = null, float startDelay = 0.3f)
         {
             m_CurrentCaption = caption;
 
@@ -127,27 +131,15 @@ namespace BMU.VRTour
                 m_TypewriterRoutine = StartCoroutine(TypewriterCaption(caption));
             }
 
-            if (clip != null && m_AudioSource != null)
-            {
-                m_AudioSource.clip = clip;
-                if (!m_IsMuted)
-                {
-                    m_AudioSource.Play();
-                }
-                m_IsPlaying = true;
-            }
-            else
-            {
-                // Fallback simulated speaking duration based on caption length
-                m_IsPlaying = true;
-                StartCoroutine(StopPlayingAfterDelay(Mathf.Clamp(caption.Length * 0.05f, 3f, 8f)));
-            }
+            if (m_Voice == null) return;
+            if (clip != null) m_Voice.Play(clip, startDelay);
+            else m_Voice.Stop();
         }
 
-        private IEnumerator StopPlayingAfterDelay(float delay)
+        /// <summary>Stops the current voiceover (Skip Intro, Start Tour Again).</summary>
+        public void StopNarration()
         {
-            yield return new WaitForSeconds(delay);
-            m_IsPlaying = false;
+            if (m_Voice != null) m_Voice.Stop();
         }
 
         private IEnumerator TypewriterCaption(string text)
@@ -161,12 +153,7 @@ namespace BMU.VRTour
 
         public void ToggleMute()
         {
-            m_IsMuted = !m_IsMuted;
-            if (m_AudioSource != null)
-            {
-                m_AudioSource.mute = m_IsMuted;
-            }
-
+            if (m_Voice != null) m_Voice.ToggleMute();
             UpdateMuteVisuals();
         }
 

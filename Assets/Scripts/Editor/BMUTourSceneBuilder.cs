@@ -924,11 +924,23 @@ namespace BMU.VRTour.Editor
             rccRt.sizeDelta = new Vector2(1280f, 440f);
             ConfigureCardRow(roomCardsContainer, 28f);
 
+            // Footer under the room cards ("3 Internal Spaces"); CampusTourManager shows it on the Workshop hub only.
+            TextMeshProUGUI inFooter = CreateText("InternalHubFooter", internalPanel.transform, "3 Internal Spaces", 24f, ColorPitchBlack, FontStyles.Bold);
+            inFooter.alignment = TextAlignmentOptions.Center;
+            RectTransform inFootRt = inFooter.GetComponent<RectTransform>();
+            inFootRt.anchorMin = new Vector2(0.5f, 0f);
+            inFootRt.anchorMax = new Vector2(0.5f, 0f);
+            inFootRt.pivot = new Vector2(0.5f, 0f);
+            inFootRt.anchoredPosition = new Vector2(0f, 8f);
+            inFootRt.sizeDelta = new Vector2(600f, 36f);
+            inFooter.gameObject.SetActive(false);
+
             // Template room card (Card is the button, unified with ColorPrimary)
             GameObject templateCard = CreateBuildingCard("RoomCardTemplate", roomCardsContainer.transform, "FACILITY", "Room Name", "Room description...", ColorNavy, s_PhotoNBClassroom, out Button btnTemplate);
             templateCard.SetActive(false);
 
             // Tour Audio Narrator (headless audio manager wired to header sound button)
+            uiRoot.AddComponent<VoiceoverManager>(); // 2D AudioSource (RequireComponent) shared by the narrator
             TourAudioNarrator narrator = uiRoot.AddComponent<TourAudioNarrator>();
             SetPrivateField(narrator, "m_CaptionText", null);
             SetPrivateField(narrator, "m_ActiveCaptionColor", ColorPitchBlack);
@@ -1053,6 +1065,8 @@ namespace BMU.VRTour.Editor
             // Internal Hub elements
             SetPrivateField(tourManager, "m_InternalHubTag", null);
             SetPrivateField(tourManager, "m_InternalHubTitle", inTitle);
+            SetPrivateField(tourManager, "m_InternalHubFooter", inFooter);
+            VoiceoverSetup.ApplyToTourManager(tourManager); // PanelVoiceover clip tables on the stage panels
             SetPrivateField(tourManager, "m_BtnBackToPlaza", btnBackPlaza);
             SetPrivateField(tourManager, "m_BtnBackToCampusHub", btnBackHub);
             SetPrivateField(tourManager, "m_RoomCardsContainer", roomCardsContainer.transform);
@@ -1206,10 +1220,13 @@ namespace BMU.VRTour.Editor
                 "zone_nb_lab",                // nb-lab
                 "zone_nb_faculty",            // nb-faculty
                 "zone_outside_gateway",       // outside-gateway
-                "zone_gw_arvr_lab",           // gw-lab (GA_Lab)
+                "zone_gw_arvr_lab",           // gw-ai-lab (GA_Lab) - photo file still has the old AR-VR name; needs a real AI Lab photo
                 "zone_gw_program_office",     // gw-office (GA_Office)
                 "zone_gw_auditorium",         // gw-auditorium (GA_Auditorium)
-                "zone_outside_workshop"       // outside-workshop
+                "zone_outside_workshop",      // outside-workshop
+                "zone_outside_workshop",      // ws-foyer  (Manufacturing Process Lab) - placeholder photo
+                "zone_outside_workshop",      // ws-hall   (KUKA Robotics Laboratory)  - placeholder photo
+                "zone_outside_workshop"       // ws-mech   (Mechatronics Laboratory)   - placeholder photo
             };
             var sprites = new Sprite[files.Length];
             for (int i = 0; i < files.Length; i++)

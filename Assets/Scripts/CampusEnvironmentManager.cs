@@ -151,8 +151,8 @@ namespace BMU.VRTour
             // 8. Gateway - ACIC Lab
             m_ZonePresets.Add(new ZoneEnvironmentData
             {
-                zoneKey = "gw-lab",
-                displayName = "Gateway: ACIC Incubator",
+                zoneKey = "gw-ai-lab",
+                displayName = "Gateway: AI Lab",
                 skyTopColor = new Color(0.74f, 0.85f, 0.94f),
                 skyHorizonColor = new Color(0.84f, 0.91f, 0.97f),
                 groundColor = new Color(0.58f, 0.65f, 0.72f)

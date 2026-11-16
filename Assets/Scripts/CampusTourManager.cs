@@ -64,6 +64,9 @@ namespace BMU.VRTour
             public string[] highlights;
             public string narration;
             public Sprite photo;
+            // Optional overrides (empty = legacy behaviour): info-panel tag line and short hub-card description.
+            public string zoneTag;
+            public string cardDescription;
         }
 
         // ====================================================================
@@ -123,6 +126,8 @@ namespace BMU.VRTour
         [Header("Internal Building Hub Elements")]
         [SerializeField] private TextMeshProUGUI m_InternalHubTag;
         [SerializeField] private TextMeshProUGUI m_InternalHubTitle;
+        [Tooltip("Optional footer under the room cards; shown on the Workshop hub as '<n> Internal Spaces'.")]
+        [SerializeField] private TextMeshProUGUI m_InternalHubFooter;
         [SerializeField] private Button m_BtnBackToPlaza;
         [SerializeField] private Button m_BtnBackToCampusHub;
         [SerializeField] private Transform m_RoomCardsContainer;
@@ -416,13 +421,15 @@ namespace BMU.VRTour
             // Gateway Building: three interior spaces (GA_Lab, GA_Office, GA_Auditorium in Scene_Gateway_Interiors).
             m_Rooms.Add(new RoomData
             {
-                key = "gw-lab",
+                key = "gw-ai-lab",
                 buildingKey = "gateway",
-                name = "AR-VR Lab",
-                badge = "AR-VR & COMPUTING",
-                description = "A computer laboratory with rows of student workstations, a teaching station and a projector screen for augmented and virtual reality development and practical sessions.",
-                highlights = new[] { "• Row-Based Computer Workstations", "• Teaching Station & Projector Screen", "• AR / VR Practical Sessions" },
-                narration = "This is the AR-VR lab, where students work on rows of computer workstations for augmented and virtual reality projects."
+                name = "Artificial Intelligence (AI) Lab",
+                badge = "AI LAB",
+                zoneTag = "GATEWAY • INTERIOR",
+                description = "A hands-on learning and development space where students explore Artificial Intelligence, build machine learning models and experiment with real-world datasets. Equipped with NVIDIA GPU computing infrastructure, including the DGX H200 system, and dedicated cooling facilities, the lab supports deep learning, Generative AI, model training and advanced AI research.",
+                cardDescription = "GPU computing lab for machine learning, deep learning and Generative AI.",
+                highlights = new[] { "• NVIDIA DGX H200 GPU Computing", "• Dedicated Cooling System", "• Machine Learning, Deep Learning & Generative AI" },
+                narration = "This is the Artificial Intelligence lab, where students build machine learning models on NVIDIA GPU computing infrastructure."
             });
 
             m_Rooms.Add(new RoomData
@@ -451,22 +458,39 @@ namespace BMU.VRTour
             {
                 key = "ws-foyer",
                 buildingKey = "workshop",
-                name = "Workshop Entrance Foyer",
-                badge = "WELCOME & EXHIBITS",
-                description = "The glazed entrance foyer of the Mechanical Workshop, with a showcase display and seating, opening onto the main workshop hall.",
-                highlights = new[] { "• Glazed Double-Height Entrance", "• Project Showcase Display", "• Access to Ground-Floor Labs" },
-                narration = "You are in the Mechanical Workshop foyer. From here, the main hall and the ground-floor labs open up ahead."
+                name = "Manufacturing Process Lab",
+                badge = "MANUFACTURING",
+                zoneTag = "MECHANICAL LAB • INTERIOR",
+                description = "A large-scale manufacturing and machining facility where students gain hands-on experience with industrial machinery and production processes. The lab provides practical exposure to conventional machining, CNC operations, laser cutting and material processing, helping students understand how engineering designs are transformed into physical components.",
+                cardDescription = "Workshop for conventional machining, CNC operations and laser cutting.",
+                highlights = new[] { "• Lathe, Milling & CNC Machines", "• Laser Cutting & Material Processing", "• Hands-on Manufacturing Practice" },
+                narration = "This is the Manufacturing Process Lab, where students gain hands-on experience with machining, CNC operations and laser cutting."
             });
 
             m_Rooms.Add(new RoomData
             {
                 key = "ws-hall",
                 buildingKey = "workshop",
-                name = "Main Workshop Hall",
-                badge = "INDUSTRIAL MACHINERY",
-                description = "A full-height workshop hall of industrial machinery and workbenches, flanked by the CNC, metrology, robotics, IoT, 3D printing and electronics labs.",
-                highlights = new[] { "• Industrial CNC & Lathe Machinery", "• Robotics, IoT & Electronics Labs", "• Additive Manufacturing 3D Printing Lab" },
-                narration = "This is the main workshop hall, where students work on industrial machines, robotics, and additive manufacturing projects."
+                name = "KUKA Robotics Laboratory",
+                badge = "ROBOTICS",
+                zoneTag = "MECHANICAL LAB • INTERIOR",
+                description = "A specialised facility for learning industrial robotics and automated manufacturing. Equipped with KUKA industrial robots and KRC-4 controllers, the laboratory provides hands-on training in robot operation and applications such as arc welding, spot welding and material handling, preparing students to understand robotic systems used in modern manufacturing industries.",
+                cardDescription = "Industrial robotics lab for robot programming, welding and handling.",
+                highlights = new[] { "• KUKA Industrial Robots & KRC-4 Controllers", "• Robotic Arc Welding & Spot Welding", "• Automated Material Handling" },
+                narration = "This is the KUKA Robotics Laboratory, where students train on industrial robots for welding and material handling."
+            });
+
+            m_Rooms.Add(new RoomData
+            {
+                key = "ws-mech",
+                buildingKey = "workshop",
+                name = "Mechatronics Laboratory",
+                badge = "MECHATRONICS",
+                zoneTag = "MECHANICAL LAB • INTERIOR",
+                description = "A specialised facility that brings together mechanical engineering, electronics and computer-based control to demonstrate automated production systems. Equipped with modular industrial training setups, the laboratory helps students understand how machines, sensors, actuators and programmable logic controllers work together to perform coordinated operations.",
+                cardDescription = "Modular automation setups showing how sensors, actuators and PLCs work together.",
+                highlights = new[] { "• Modular Five-Station Automation Systems", "• Sensors, Actuators & Drive Systems", "• PLC-Based Control & Industrial Automation" },
+                narration = "This is the Mechatronics Laboratory, where sensors, actuators and PLCs work together in modular automation systems."
             });
 
             // Bind Photographic Sprites to Carousel Slides
@@ -483,7 +507,8 @@ namespace BMU.VRTour
             // KEEP IN SYNC with BMUTourSceneBuilder.LoadLocationPhotos(): same keys, same order (index-aligned).
             string[] locKeys = new string[] {
                 "front-gate", "outside-north-block", "nb-classroom", "nb-classroom-2", "nb-lab", "nb-faculty",
-                "outside-gateway", "gw-lab", "gw-office", "gw-auditorium", "outside-workshop"
+                "outside-gateway", "gw-ai-lab", "gw-office", "gw-auditorium", "outside-workshop",
+                "ws-foyer", "ws-hall", "ws-mech"
             };
             for (int i = 0; i < locKeys.Length; i++)
             {
@@ -517,7 +542,11 @@ namespace BMU.VRTour
             // Intro Carousel buttons
             if (m_BtnPrevSlide != null) m_BtnPrevSlide.onClick.AddListener(PreviousSlide);
             if (m_BtnNextSlide != null) m_BtnNextSlide.onClick.AddListener(NextSlide);
-            if (m_BtnSkipIntro != null) m_BtnSkipIntro.onClick.AddListener(OpenCampusHub);
+            if (m_BtnSkipIntro != null) m_BtnSkipIntro.onClick.AddListener(() =>
+            {
+                if (TourAudioNarrator.Instance != null) TourAudioNarrator.Instance.StopNarration();
+                OpenCampusHub();
+            });
 
             // Campus Hub destination buttons
             if (m_BtnSelectNorthBlock != null) m_BtnSelectNorthBlock.onClick.AddListener(() => TeleportToLocation("outside-north-block"));
@@ -525,7 +554,7 @@ namespace BMU.VRTour
             if (m_BtnSelectWorkshop != null) m_BtnSelectWorkshop.onClick.AddListener(() => TeleportToLocation("outside-workshop"));
 
             // Location Info buttons
-            if (m_BtnExploreInterior != null) m_BtnExploreInterior.onClick.AddListener(OpenInteriorHubForCurrentBuilding);
+            if (m_BtnExploreInterior != null) m_BtnExploreInterior.onClick.AddListener(OnExploreInteriorClicked);
             if (m_BtnNextLocation != null) m_BtnNextLocation.onClick.AddListener(NavigateToNextBuilding);
             if (m_BtnCampusHubReturn != null) m_BtnCampusHubReturn.onClick.AddListener(OpenCampusHub);
             if (m_BtnMinimize != null && m_DockOrb != null) m_BtnMinimize.onClick.AddListener(m_DockOrb.MinimizeToDock);
@@ -541,6 +570,7 @@ namespace BMU.VRTour
         // ====================================================================
         public void StartTourFromBeginning()
         {
+            if (TourAudioNarrator.Instance != null) TourAudioNarrator.Instance.StopNarration();
             m_CurrentSlideIndex = 0;
             m_CurrentLocationKey = "front-gate";
 
@@ -592,10 +622,41 @@ namespace BMU.VRTour
             }
         }
 
+        // Looks the state's clip up on the panel's PanelVoiceover and hands it to the narrator, which is the
+        // only place audio is triggered from. No entry / no clip stops whatever was playing.
+        private void PlayVoice(GameObject panel, string key, string caption)
+        {
+            if (TourAudioNarrator.Instance == null) return;
+            AudioClip clip = null;
+            float delay = 0.3f;
+            PanelVoiceover pv = panel != null ? panel.GetComponent<PanelVoiceover>() : null;
+            if (pv != null) pv.TryGet(key, out clip, out delay);
+            TourAudioNarrator.Instance.PlayNarration(caption, clip, delay);
+        }
+
+        private static string HubVoiceKey(string buildingKey) => "hub-" + buildingKey;
+
+        // "Switch Room" in a workshop room cycles ws-foyer -> ws-hall -> ws-mech; other buildings still open their hub.
+        private void OnExploreInteriorClicked()
+        {
+            if (m_CurrentLocationKey != null && m_CurrentLocationKey.StartsWith("ws-"))
+            {
+                List<RoomData> rooms = m_Rooms.FindAll(r => r.buildingKey == "workshop");
+                int idx = rooms.FindIndex(r => r.key == m_CurrentLocationKey);
+                if (rooms.Count > 1 && idx >= 0)
+                {
+                    TeleportToLocation(rooms[(idx + 1) % rooms.Count].key);
+                    return;
+                }
+            }
+            OpenInteriorHubForCurrentBuilding();
+        }
+
         private void UpdateCarouselDisplay()
         {
             if (m_Slides == null || m_Slides.Count == 0) return;
             CarouselSlideData slide = m_Slides[m_CurrentSlideIndex];
+            PlayVoice(m_IntroCarouselPanel, $"slide-{m_CurrentSlideIndex}", slide.title);
 
             if (m_SlideBadgeText != null)
             {
@@ -683,10 +744,7 @@ namespace BMU.VRTour
                 ActivateStage(m_CampusHubPanel);
                 UpdateHeaderLocation("CAMPUS EXPLORATION HUB • CHOOSE DESTINATION");
 
-                if (TourAudioNarrator.Instance != null)
-                {
-                    TourAudioNarrator.Instance.PlayNarration("Welcome to the Campus Exploration Hub. Choose one of our three primary university complexes to begin your tour.");
-                }
+                PlayVoice(m_CampusHubPanel, "campus-hub", "Welcome to the Campus Exploration Hub. Choose one of our three primary university complexes to begin your tour.");
             };
 
             // If indoors, return to exterior front gate per architecture plan
@@ -801,10 +859,7 @@ namespace BMU.VRTour
                 if (btnText != null) btnText.text = "ENTER";
             }
 
-            if (TourAudioNarrator.Instance != null)
-            {
-                TourAudioNarrator.Instance.PlayNarration(data.narration);
-            }
+            PlayVoice(m_LocationInfoPanel, locKey, data.narration);
         }
 
         private void ShowRoomInfo(RoomData room)
@@ -812,7 +867,7 @@ namespace BMU.VRTour
             ActivateStage(m_LocationInfoPanel);
             UpdateHeaderLocation($"{room.name.ToUpperInvariant()} • INTERIOR");
 
-            if (m_LocZoneTag != null) m_LocZoneTag.text = $"{room.badge} • 360° INTERIOR";
+            if (m_LocZoneTag != null) m_LocZoneTag.text = string.IsNullOrEmpty(room.zoneTag) ? $"{room.badge} • 360° INTERIOR" : room.zoneTag;
             if (m_LocHeading != null) m_LocHeading.text = room.name;
             if (m_LocSummary != null) m_LocSummary.text = room.description;
 
@@ -836,10 +891,7 @@ namespace BMU.VRTour
                 if (btnText != null) btnText.text = "Switch Room";
             }
 
-            if (TourAudioNarrator.Instance != null)
-            {
-                TourAudioNarrator.Instance.PlayNarration(room.narration);
-            }
+            PlayVoice(m_LocationInfoPanel, room.key, room.narration);
         }
 
         private void NavigateToNextBuilding()
@@ -877,10 +929,14 @@ namespace BMU.VRTour
 
             PopulateRoomCards(building);
 
-            if (TourAudioNarrator.Instance != null)
+            if (m_InternalHubFooter != null)
             {
-                TourAudioNarrator.Instance.PlayNarration("Select any of our academic facilities or research laboratories to step inside.");
+                bool showFooter = building == "workshop";
+                m_InternalHubFooter.gameObject.SetActive(showFooter);
+                if (showFooter) m_InternalHubFooter.text = $"{m_Rooms.FindAll(r => r.buildingKey == building).Count} Internal Spaces";
             }
+
+            PlayVoice(m_InternalBuildingHubPanel, HubVoiceKey(building), "Select any of our academic facilities or research laboratories to step inside.");
         }
 
         private void PopulateRoomCards(string buildingKey)
@@ -910,7 +966,7 @@ namespace BMU.VRTour
                 // assignment used to put the room name inside the small badge pill.
                 SetDescendantText(cardObj.transform, "Title", room.name);
                 SetDescendantText(cardObj.transform, "Badge", room.badge);
-                SetDescendantText(cardObj.transform, "Description", room.description);
+                SetDescendantText(cardObj.transform, "Description", string.IsNullOrEmpty(room.cardDescription) ? room.description : room.cardDescription);
                 Transform actionPill = cardObj.transform.Find("ActionPill");
                 if (actionPill != null) actionPill.gameObject.SetActive(false);
 

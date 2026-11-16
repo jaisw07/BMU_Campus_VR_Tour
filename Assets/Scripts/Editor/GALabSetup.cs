@@ -124,7 +124,7 @@ namespace BMU.VRTour.Editor
             AddProbesAndCulling(world.transform, log);
             Transform anchor = AddDoorAnchor(root, world.transform, log);
             AddPlayer(world.transform, anchor, "GALab_Player", "Gateway Lab", UnityEngine.InputSystem.Key.Digit4);
-            AddRoomPod(world.transform, anchor, "RoomPod_ARVRLab", "gw-lab", "AR-VR Lab");
+            AddRoomPod(world.transform, anchor, "RoomPod_ARVRLab", "gw-ai-lab", "AI Lab");
             SetTeleportRayIgnoreLayer(root, log, "GAL_Student_Desks", "GAL_Student_Computers", "GAL_Chairs", "GAL_Teacher_Station", "GAL_Furniture_Misc");
             AddTeleportAnchors(world.transform, "GALab_TeleportAnchors", "GAL_Room_Shell", new[]
             {

@@ -3058,6 +3058,143 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 465979410}
   m_CullTransparentMesh: 1
+--- !u!1 &478929276
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 478929277}
+  - component: {fileID: 478929279}
+  - component: {fileID: 478929278}
+  m_Layer: 0
+  m_Name: InternalHubFooter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &478929277
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478929276}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 834724609}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 8}
+  m_SizeDelta: {x: 600, y: 36}
+  m_Pivot: {x: 0.5, y: 0}
+--- !u!114 &478929278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478929276}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 3 Internal Spaces
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: ef245f3998826a14e881a4a74af69c39, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: e1cb0a4663c4b3eb9abd9a7569356193, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: 0
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 24
+  m_fontSizeBase: 24
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &478929279
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478929276}
+  m_CullTransparentMesh: 1
 --- !u!1 &486393528
 GameObject:
   m_ObjectHideFlags: 0
@@ -3492,6 +3629,7 @@ GameObject:
   m_Component:
   - component: {fileID: 532504356}
   - component: {fileID: 532504355}
+  - component: {fileID: 532504357}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -3579,6 +3717,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &532504357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532504354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &535509857
 GameObject:
   m_ObjectHideFlags: 0
@@ -5413,6 +5580,8 @@ GameObject:
   - component: {fileID: 718310083}
   - component: {fileID: 718310082}
   - component: {fileID: 718310081}
+  - component: {fileID: 718310087}
+  - component: {fileID: 718310086}
   m_Layer: 0
   m_Name: '[VR_Spatial_UI_Root]'
   m_TagString: Untagged
@@ -5452,7 +5621,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a842bea7d1261a459a260d0760af693, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.TourAudioNarrator
-  m_AudioSource: {fileID: 0}
   m_CaptionText: {fileID: 0}
   m_AudioToggleButton: {fileID: 859027929}
   m_ToggleButtonText: {fileID: 0}
@@ -5572,6 +5740,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 8ea3161ef3e568649be9bbd49b98e97b, type: 3}
   m_InternalHubTag: {fileID: 0}
   m_InternalHubTitle: {fileID: 1643981739}
+  m_InternalHubFooter: {fileID: 478929278}
   m_BtnBackToPlaza: {fileID: 2136206417}
   m_BtnBackToCampusHub: {fileID: 1808914123}
   m_RoomCardsContainer: {fileID: 656359121}
@@ -5618,6 +5787,115 @@ Transform:
   - {fileID: 79582329}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &718310086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 718310080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c10de5a43b3b5d4bad3ec476bae57e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.VoiceoverManager
+--- !u!82 &718310087
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 718310080}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &738704975
 GameObject:
   m_ObjectHideFlags: 0
@@ -6075,6 +6353,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 834724609}
+  - component: {fileID: 834724610}
   m_Layer: 0
   m_Name: Stage4_InternalBuildingHubPanel
   m_TagString: Untagged
@@ -6096,6 +6375,7 @@ RectTransform:
   m_Children:
   - {fileID: 449905403}
   - {fileID: 656359121}
+  - {fileID: 478929277}
   m_Father: {fileID: 2050992235}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -6103,6 +6383,28 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -36}
   m_SizeDelta: {x: -40, y: -120}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &834724610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 834724608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd8cb9979a78c1449a9b7359819aa12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.PanelVoiceover
+  m_Entries:
+  - key: hub-north-block
+    clip: {fileID: 8300000, guid: 449921694ffffbc47abb1c94614da963, type: 3}
+    startDelay: 0.3
+  - key: hub-gateway
+    clip: {fileID: 8300000, guid: fbd339a5f93f44b4c9c14aeb2aa4aa82, type: 3}
+    startDelay: 0.3
+  - key: hub-workshop
+    clip: {fileID: 8300000, guid: 9272ef9b95854864daafeeafcb9ed3cd, type: 3}
+    startDelay: 0.3
 --- !u!1 &837468052
 GameObject:
   m_ObjectHideFlags: 0
@@ -8755,6 +9057,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1192858614}
+  - component: {fileID: 1192858615}
   m_Layer: 0
   m_Name: Stage2_CampusHubPanel
   m_TagString: Untagged
@@ -8783,6 +9086,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -36}
   m_SizeDelta: {x: -40, y: -120}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1192858615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192858613}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd8cb9979a78c1449a9b7359819aa12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.PanelVoiceover
+  m_Entries:
+  - key: campus-hub
+    clip: {fileID: 8300000, guid: c5cb9de45186c814a94e3ee777bdc548, type: 3}
+    startDelay: 0.3
 --- !u!1 &1221787090
 GameObject:
   m_ObjectHideFlags: 0
@@ -11073,6 +11392,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1641987874}
+  - component: {fileID: 1641987875}
   m_Layer: 0
   m_Name: Stage1_IntroCarouselPanel
   m_TagString: Untagged
@@ -11102,6 +11422,34 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -36}
   m_SizeDelta: {x: -40, y: -120}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1641987875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1641987873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd8cb9979a78c1449a9b7359819aa12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.PanelVoiceover
+  m_Entries:
+  - key: slide-0
+    clip: {fileID: 8300000, guid: b33448bae9251bd41b6746b45ec10ea4, type: 3}
+    startDelay: 0.3
+  - key: slide-1
+    clip: {fileID: 8300000, guid: 540bf42176e3f63478b2076fde5dceb4, type: 3}
+    startDelay: 0.3
+  - key: slide-2
+    clip: {fileID: 8300000, guid: da1e4ce366bc84c4da9044b4b925e7a1, type: 3}
+    startDelay: 0.3
+  - key: slide-3
+    clip: {fileID: 8300000, guid: 7b0091501d26133458f5deb8bd62b392, type: 3}
+    startDelay: 0.3
+  - key: slide-4
+    clip: {fileID: 8300000, guid: ce8af3849a8d73f4aaf628a891573751, type: 3}
+    startDelay: 0.3
 --- !u!1 &1643981737
 GameObject:
   m_ObjectHideFlags: 0
@@ -12750,6 +13098,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1869671734}
+  - component: {fileID: 1869671735}
   m_Layer: 0
   m_Name: Stage3_LocationInfoPanel
   m_TagString: Untagged
@@ -12777,6 +13126,55 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -36}
   m_SizeDelta: {x: -40, y: -120}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1869671735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1869671733}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd8cb9979a78c1449a9b7359819aa12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.PanelVoiceover
+  m_Entries:
+  - key: outside-north-block
+    clip: {fileID: 8300000, guid: e58a2bdfe874b8841a593c82181e8889, type: 3}
+    startDelay: 0.3
+  - key: nb-classroom
+    clip: {fileID: 8300000, guid: 16ee85fc8ce094a4487fb46063096d93, type: 3}
+    startDelay: 0.3
+  - key: nb-lab
+    clip: {fileID: 8300000, guid: feb65e44c3b94c040883fee030586f9f, type: 3}
+    startDelay: 0.3
+  - key: nb-faculty
+    clip: {fileID: 8300000, guid: 2cfc9406ad7bedd47a6f604ed8b07ad3, type: 3}
+    startDelay: 0.3
+  - key: outside-gateway
+    clip: {fileID: 8300000, guid: e3a679bcc663bbc4db6ccc4b8349eae1, type: 3}
+    startDelay: 0.3
+  - key: gw-office
+    clip: {fileID: 8300000, guid: 1b123dc8db7344e40849e1270b7e419b, type: 3}
+    startDelay: 0.3
+  - key: gw-ai-lab
+    clip: {fileID: 8300000, guid: 9be4f86ece92a1f4598f4556c9428596, type: 3}
+    startDelay: 0.3
+  - key: gw-auditorium
+    clip: {fileID: 8300000, guid: 68647d488df099544be9dbf70361207e, type: 3}
+    startDelay: 0.3
+  - key: outside-workshop
+    clip: {fileID: 8300000, guid: db672a43e1b176b4aa93645878c34ef7, type: 3}
+    startDelay: 0.3
+  - key: ws-foyer
+    clip: {fileID: 8300000, guid: 2c5f4c8a62f06e34d8c78d7080b313e6, type: 3}
+    startDelay: 0.3
+  - key: ws-hall
+    clip: {fileID: 8300000, guid: 35421c141a07565469eb5ad41d0bfcee, type: 3}
+    startDelay: 0.3
+  - key: ws-mech
+    clip: {fileID: 8300000, guid: e77c371b1f3c4c64cbdc224ffb0c9d57, type: 3}
+    startDelay: 0.3
 --- !u!1 &1882953931
 GameObject:
   m_ObjectHideFlags: 0

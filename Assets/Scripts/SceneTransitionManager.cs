@@ -400,11 +400,12 @@ namespace BMU.VRTour
                 case "nb-lab": expectedPodName = "RoomPod_RoboticsLab"; break;
                 case "nb-faculty": expectedPodName = "RoomPod_FacultyCabins"; break;
                 case "nb-classroom-2": expectedPodName = "RoomPod_StandardClassroom"; break;
-                case "gw-lab": expectedPodName = "RoomPod_ARVRLab"; break;
+                case "gw-ai-lab": expectedPodName = "RoomPod_ARVRLab"; break; // pod keeps its original name (AI Lab)
                 case "gw-office": expectedPodName = "RoomPod_ProgramOffice"; break;
                 case "gw-auditorium": expectedPodName = "RoomPod_Auditorium"; break;
                 case "ws-foyer": expectedPodName = "RoomPod_WorkshopFoyer"; break;
                 case "ws-hall": expectedPodName = "RoomPod_WorkshopHall"; break;
+                case "ws-mech": expectedPodName = "RoomPod_WorkshopMechatronics"; break;
             }
 
             if (!string.IsNullOrEmpty(expectedPodName))
