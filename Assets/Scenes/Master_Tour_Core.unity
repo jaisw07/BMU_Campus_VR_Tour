@@ -13589,6 +13589,7 @@ GameObject:
   - component: {fileID: 1974000571}
   - component: {fileID: 1974000569}
   - component: {fileID: 1974000570}
+  - component: {fileID: 1974000575}
   m_Layer: 0
   m_Name: MainSpatialCanvas
   m_TagString: Untagged
@@ -14808,3 +14809,31 @@ SceneRoots:
   - {fileID: 2040933408}
   - {fileID: 718310085}
   - {fileID: 592960250}
+--- !u!114 &1974000575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1974000568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42683fe7d6d269348a55566976f46f89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BMU.VRTour.ViewportEdgeClamp
+  m_Camera: {fileID: 0}
+  m_ClampToViewport: 1
+  m_ViewportMargin: 0.12
+  m_ReleaseHysteresis: 0.03
+  m_AvoidWalls: 1
+  m_UseSphereCast: 1
+  m_CollisionMask:
+    serializedVersion: 2
+    m_Bits: 2147483611
+  m_MinDistance: 0.6
+  m_HardMinDistance: 0.3
+  m_WallPadding: 0.1
+  m_MaxSphereRadius: 0.3
+  m_MinScale: 0.35
+  m_PositionSmoothTime: 0.18
+  m_ScaleSmoothTime: 0.18

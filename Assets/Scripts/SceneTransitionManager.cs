@@ -311,6 +311,16 @@ namespace BMU.VRTour
             rigTransform.position = targetPos;
             rigTransform.rotation = targetRot;
 
+            // Put the player's HEAD (the XR camera), not the rig origin, on the anchor: the headset's local
+            // tracking offset would otherwise shift where the player actually stands. Horizontal only; height
+            // stays floor-relative.
+            Camera head = m_XROrigin.Camera;
+            if (head != null)
+            {
+                Vector3 headPos = head.transform.position;
+                rigTransform.position += new Vector3(targetPos.x - headPos.x, 0f, targetPos.z - headPos.z);
+            }
+
             if (m_CharacterController != null && wasCcEnabled)
             {
                 m_CharacterController.enabled = true;

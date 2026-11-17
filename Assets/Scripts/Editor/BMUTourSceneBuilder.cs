@@ -401,6 +401,9 @@ namespace BMU.VRTour.Editor
 
             CanvasGroup mainCanvasGroup = canvasObj.AddComponent<CanvasGroup>();
 
+            // Keeps every stage panel (intro, hub, facility hub, room info) reachable at the view edge and out of walls.
+            canvasObj.AddComponent<ViewportEdgeClamp>();
+
             BoxCollider canvasCol = canvasObj.AddComponent<BoxCollider>();
             canvasCol.isTrigger = true;
             canvasCol.size = new Vector3(1400f, 850f, 20f);
@@ -2149,17 +2152,17 @@ namespace BMU.VRTour.Editor
             GameObject anchorsParent = new GameObject("Exterior_Navigation_Anchors");
             Color anchorPadColor = new Color(0f, 0.45f, 0.85f);
 
-            // 1. Initial Point / Front Gate: moved backward along entry road (+14m) looking through gate (-90° / facing -X)
-            CreateTeleportAnchor("Anchor_FrontGate", new Vector3(14.0f, 0.05f, 0f), Quaternion.Euler(0f, -90f, 0f), anchorsParent.transform, anchorPadColor);
+            // 1. Initial Point / Front Gate: on the entry road at x = +4m (was +14m), closer to the gate, looking through it (-90° / facing -X). See SpawnPointOverrides.
+            CreateTeleportAnchor("Anchor_FrontGate", new Vector3(4.0f, 0.0f, 0f), Quaternion.Euler(0f, -90f, 0f), anchorsParent.transform, anchorPadColor);
 
             // 2. The Gateway (GA_GB): moved closer to building facade (-116.5m vs building at -114.9m), centered on width (Z = -87.33m)
             CreateTeleportAnchor("Anchor_Gateway_Plaza", new Vector3(-116.5f, 0.05f, -87.33f), Quaternion.Euler(0f, -90f, 0f), anchorsParent.transform, anchorPadColor);
 
-            // 3. North Block (NB): halved scale position (X = -480.23m, Z = -127.5m), facing north into entrance (0°)
-            CreateTeleportAnchor("Anchor_NorthBlock_Plaza", new Vector3(-480.23f, 0.05f, -127.5f), Quaternion.Euler(0f, 0f, 0f), anchorsParent.transform, anchorPadColor);
+            // 3. North Block (NB): X = -480.23m, Z = -230m (was -127.5): ~110m from the 219m x 88m facade so the whole building and roof line fit in view. Facing north (0°)
+            CreateTeleportAnchor("Anchor_NorthBlock_Plaza", new Vector3(-480.23f, 0.0f, -230f), Quaternion.Euler(0f, 0f, 0f), anchorsParent.transform, anchorPadColor);
 
-            // 4. Workshop (MechanicalWorkshop): halved scale position (X = -411.63m, Z = -275.0m), facing south into entrance (180°)
-            CreateTeleportAnchor("Anchor_Workshop_Plaza", new Vector3(-411.63f, 0.05f, -275.0f), Quaternion.Euler(0f, 180f, 0f), anchorsParent.transform, anchorPadColor);
+            // 4. Workshop (MechanicalWorkshop): X = -461.5m (was -411.63) = centred on the entrance bay, Z = -275.0m, facing south (180°)
+            CreateTeleportAnchor("Anchor_Workshop_Plaza", new Vector3(-461.5f, 0.0f, -275.0f), Quaternion.Euler(0f, 180f, 0f), anchorsParent.transform, anchorPadColor);
 
             // Safety Recovery Floor underneath (covers full outer campus bounds at 0.5x scale)
             GameObject safetyFloor = new GameObject("OutOfBounds_ResetFloor");

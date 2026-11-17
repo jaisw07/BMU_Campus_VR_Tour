@@ -343,6 +343,7 @@ namespace BMU.VRTour.Editor
                 }
             }
             anchorObj.transform.SetPositionAndRotation(spawn, Quaternion.LookRotation(facing, Vector3.up));
+            SpawnPointOverrides.TryApply(anchorObj.transform); // hand-tuned position (room centre), see SpawnPointOverrides
             log?.AppendLine($"NB-105 entrance: spawn {spawn:F2} facing {facing}");
             return anchorObj.transform;
         }

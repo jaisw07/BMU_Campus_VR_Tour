@@ -723,6 +723,7 @@ namespace BMU.VRTour.Editor
                 }
             }
             a.transform.SetPositionAndRotation(bestPos, Quaternion.LookRotation(facing, Vector3.up));
+            SpawnPointOverrides.TryApply(a.transform); // hand-tuned spawns (e.g. Standard Classroom), see SpawnPointOverrides
             return a.transform;
         }
 
