@@ -132,6 +132,17 @@ namespace BMU.VRTour.Editor
             Debug.Log("[BMU VR Tour] Multi-Scene VR architecture completely built and configured!");
         }
 
+        [MenuItem("BMU VR Tour/Build Master Tour Core Scene Only", false, 3)]
+        public static void BuildMasterTourCoreSceneOnly()
+        {
+            Debug.Log("[BMU VR Tour] Building Master Tour Core Scene Only...");
+            LoadAssets();
+            XRSetupInitializer.EnsureXRConfigured();
+            BuildMasterTourCoreScene();
+            EditorSceneManager.OpenScene("Assets/Scenes/Master_Tour_Core.unity", OpenSceneMode.Single);
+            Debug.Log("[BMU VR Tour] Master Tour Core Scene rebuilt successfully!");
+        }
+
         private static void CleanUpOldObjects()
         {
             var activeScene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
@@ -616,9 +627,9 @@ namespace BMU.VRTour.Editor
 
             // Pointer tags: white rounded rectangles with panel opacity (GlassCard)
             // Left-aligned with the text above (pivot.x = 0), stacked vertically one below the other
-            GameObject pointersContainer = new GameObject("SlidePointersContainer");
+            GameObject pointersContainer = new GameObject("SlidePointersContainer", typeof(RectTransform));
             pointersContainer.transform.SetParent(slideTextStack.transform, false);
-            RectTransform pContRt = pointersContainer.GetComponent<RectTransform>() ?? pointersContainer.AddComponent<RectTransform>();
+            RectTransform pContRt = pointersContainer.GetComponent<RectTransform>();
             pContRt.anchorMin = new Vector2(0f, 1f);
             pContRt.anchorMax = new Vector2(1f, 1f);
             pContRt.pivot = new Vector2(0f, 1f);
@@ -1439,9 +1450,8 @@ namespace BMU.VRTour.Editor
         /// </summary>
         private static GameObject CreateTextStack(string name, Transform parent, float spacing)
         {
-            GameObject stack = new GameObject(name);
+            GameObject stack = new GameObject(name, typeof(RectTransform));
             stack.transform.SetParent(parent, false);
-            stack.AddComponent<RectTransform>();
             VerticalLayoutGroup vlg = stack.AddComponent<VerticalLayoutGroup>();
             vlg.spacing = spacing;
             vlg.childAlignment = TextAnchor.UpperLeft;
@@ -1943,10 +1953,10 @@ namespace BMU.VRTour.Editor
 
         private static GameObject CreatePointerTag(string name, Transform parent, string text, Color tagColor, out TextMeshProUGUI outText)
         {
-            GameObject tagObj = new GameObject(name);
+            GameObject tagObj = new GameObject(name, typeof(RectTransform));
             tagObj.transform.SetParent(parent, false);
 
-            RectTransform tagRt = tagObj.GetComponent<RectTransform>() ?? tagObj.AddComponent<RectTransform>();
+            RectTransform tagRt = tagObj.GetComponent<RectTransform>();
             tagRt.anchorMin = new Vector2(0f, 1f);
             tagRt.anchorMax = new Vector2(0f, 1f);
             tagRt.pivot = new Vector2(0f, 0.5f); // Left-aligned pivot ensures tags align flush with text above with no horizontal offset

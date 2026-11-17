@@ -474,26 +474,26 @@ namespace BMU.VRTour
             {
                 key = "ws-hall",
                 buildingKey = "workshop",
-                name = "KUKA Robotics Laboratory",
+                name = "KUKA Robotics Training Centre",
                 badge = "ROBOTICS",
                 zoneTag = "MECHANICAL LAB • INTERIOR",
                 description = "A specialised facility for learning industrial robotics and automated manufacturing. Equipped with KUKA industrial robots and KRC-4 controllers, the laboratory provides hands-on training in robot operation and applications such as arc welding, spot welding and material handling, preparing students to understand robotic systems used in modern manufacturing industries.",
                 cardDescription = "Industrial robotics lab for robot programming, welding and handling.",
                 highlights = new[] { "• KUKA Industrial Robots & KRC-4 Controllers", "• Robotic Arc Welding & Spot Welding", "• Automated Material Handling" },
-                narration = "This is the KUKA Robotics Laboratory, where students train on industrial robots for welding and material handling."
+                narration = "This is the KUKA Robotics Training Centre, where students train on industrial robots for welding and material handling."
             });
 
             m_Rooms.Add(new RoomData
             {
                 key = "ws-mech",
                 buildingKey = "workshop",
-                name = "Mechatronics Laboratory",
+                name = "Mechatronics & Automation Lab",
                 badge = "MECHATRONICS",
                 zoneTag = "MECHANICAL LAB • INTERIOR",
                 description = "A specialised facility that brings together mechanical engineering, electronics and computer-based control to demonstrate automated production systems. Equipped with modular industrial training setups, the laboratory helps students understand how machines, sensors, actuators and programmable logic controllers work together to perform coordinated operations.",
                 cardDescription = "Modular automation setups showing how sensors, actuators and PLCs work together.",
                 highlights = new[] { "• Modular Five-Station Automation Systems", "• Sensors, Actuators & Drive Systems", "• PLC-Based Control & Industrial Automation" },
-                narration = "This is the Mechatronics Laboratory, where sensors, actuators and PLCs work together in modular automation systems."
+                narration = "This is the Mechatronics & Automation Lab, where sensors, actuators and PLCs work together in modular automation systems."
             });
 
             // Bind Photographic Sprites to Carousel Slides
@@ -645,19 +645,9 @@ namespace BMU.VRTour
 
         private static string HubVoiceKey(string buildingKey) => "hub-" + buildingKey;
 
-        // "Switch Room" in a workshop room cycles ws-foyer -> ws-hall -> ws-mech; other buildings still open their hub.
+        // "Switch Room" always opens the Interior Hub for the current building.
         private void OnExploreInteriorClicked()
         {
-            if (m_CurrentLocationKey != null && m_CurrentLocationKey.StartsWith("ws-"))
-            {
-                List<RoomData> rooms = m_Rooms.FindAll(r => r.buildingKey == "workshop");
-                int idx = rooms.FindIndex(r => r.key == m_CurrentLocationKey);
-                if (rooms.Count > 1 && idx >= 0)
-                {
-                    TeleportToLocation(rooms[(idx + 1) % rooms.Count].key);
-                    return;
-                }
-            }
             OpenInteriorHubForCurrentBuilding();
         }
 
@@ -926,8 +916,17 @@ namespace BMU.VRTour
         // ====================================================================
         public void OpenInteriorHubForCurrentBuilding()
         {
-            string building = m_CurrentBuildingContext == "outside-gateway" ? "gateway"
-                : m_CurrentBuildingContext == "outside-workshop" ? "workshop" : "north-block";
+            string building;
+            if (!string.IsNullOrEmpty(m_CurrentLocationKey) && IsRoomKey(m_CurrentLocationKey))
+            {
+                building = BuildingKeyForRoom(m_CurrentLocationKey);
+                m_CurrentBuildingContext = "outside-" + building;
+            }
+            else
+            {
+                building = m_CurrentBuildingContext == "outside-gateway" ? "gateway"
+                    : m_CurrentBuildingContext == "outside-workshop" ? "workshop" : "north-block";
+            }
 
             ActivateStage(m_InternalBuildingHubPanel);
 
