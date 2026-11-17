@@ -50,7 +50,8 @@ namespace BMU.VRTour
             public string narration;
             public bool hasInterior;
             public string buildingKey; // e.g. "north-block", "gateway", "workshop"
-            public Sprite photo;
+            public Sprite photo;      // detail-panel photo (right side of the info panel)
+            public Sprite cardPhoto;  // wide hub-card image
         }
 
         [System.Serializable]
@@ -63,7 +64,8 @@ namespace BMU.VRTour
             [TextArea(2, 4)] public string description;
             public string[] highlights;
             public string narration;
-            public Sprite photo;
+            public Sprite photo;      // detail-panel photo (right side of the info panel)
+            public Sprite cardPhoto;  // wide hub-card image
             // Optional overrides (empty = legacy behaviour): info-panel tag line and short hub-card description.
             public string zoneTag;
             public string cardDescription;
@@ -122,6 +124,7 @@ namespace BMU.VRTour
         [SerializeField] private Button m_BtnCampusHubReturn;
         [SerializeField] private Button m_BtnMinimize;
         [SerializeField] private Sprite[] m_LocationPhotoSprites = new Sprite[9];
+        [SerializeField] private Sprite[] m_LocationCardSprites = new Sprite[14]; // wide hub-card images, index-aligned with m_LocationPhotoSprites
 
         [Header("Internal Building Hub Elements")]
         [SerializeField] private TextMeshProUGUI m_InternalHubTag;
@@ -512,6 +515,12 @@ namespace BMU.VRTour
             };
             for (int i = 0; i < locKeys.Length; i++)
             {
+                if (m_LocationCardSprites != null && i < m_LocationCardSprites.Length && m_LocationCardSprites[i] != null)
+                {
+                    if (m_Locations.TryGetValue(locKeys[i], out LocationData cardLd)) cardLd.cardPhoto = m_LocationCardSprites[i];
+                    RoomData cardRd = m_Rooms.Find(r => r.key == locKeys[i]);
+                    if (cardRd != null) cardRd.cardPhoto = m_LocationCardSprites[i];
+                }
                 if (m_LocationPhotoSprites != null && i < m_LocationPhotoSprites.Length && m_LocationPhotoSprites[i] != null)
                 {
                     if (m_Locations.TryGetValue(locKeys[i], out LocationData ld))
@@ -848,6 +857,7 @@ namespace BMU.VRTour
             if (m_LocPhotoCardImage != null && data.photo != null)
             {
                 m_LocPhotoCardImage.sprite = data.photo;
+                m_LocPhotoCardImage.preserveAspect = true;
                 m_LocPhotoCardImage.color = Color.white;
             }
 
@@ -881,6 +891,7 @@ namespace BMU.VRTour
             if (m_LocPhotoCardImage != null && room.photo != null)
             {
                 m_LocPhotoCardImage.sprite = room.photo;
+                m_LocPhotoCardImage.preserveAspect = true;
                 m_LocPhotoCardImage.color = Color.white;
             }
 
@@ -939,6 +950,18 @@ namespace BMU.VRTour
             PlayVoice(m_InternalBuildingHubPanel, HubVoiceKey(building), "Select any of our academic facilities or research laboratories to step inside.");
         }
 
+        /// <summary>Assigns a sprite to an Image inside a masked container and fill-crops it (no stretching, no letterbox).</summary>
+        public static void ApplyFillCropSprite(Image img, Sprite sprite)
+        {
+            img.sprite = sprite;
+            img.color = Color.white;
+            img.preserveAspect = false;
+            var fitter = img.GetComponent<AspectRatioFitter>();
+            if (fitter == null) fitter = img.gameObject.AddComponent<AspectRatioFitter>();
+            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
+        }
+
         private void PopulateRoomCards(string buildingKey)
         {
             if (m_RoomCardsContainer == null || m_RoomCardTemplate == null) return;
@@ -985,10 +1008,10 @@ namespace BMU.VRTour
                 if (photoTr != null)
                 {
                     Image photoImg = photoTr.GetComponent<Image>();
-                    if (photoImg != null && room.photo != null)
+                    Sprite cardSprite = room.cardPhoto != null ? room.cardPhoto : room.photo;
+                    if (photoImg != null && cardSprite != null)
                     {
-                        photoImg.sprite = room.photo;
-                        photoImg.color = Color.white;
+                        ApplyFillCropSprite(photoImg, cardSprite);
                     }
                 }
 

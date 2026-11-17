@@ -505,10 +505,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1008710114}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &60785017
 MonoBehaviour:
@@ -539,7 +539,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -552,7 +552,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -798,7 +798,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -811,7 +811,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1757,7 +1757,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -32}
-  m_SizeDelta: {x: 220, y: 28}
+  m_SizeDelta: {x: 0, y: 28}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &265303169
 MonoBehaviour:
@@ -3398,7 +3398,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3411,7 +3411,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3949,7 +3949,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3962,7 +3962,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4410,6 +4410,7 @@ GameObject:
   - component: {fileID: 621504088}
   - component: {fileID: 621504090}
   - component: {fileID: 621504089}
+  - component: {fileID: 621504091}
   m_Layer: 0
   m_Name: CardPhoto
   m_TagString: Untagged
@@ -4456,7 +4457,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: caae75506bf92b94088cec68280c9e47, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f04c50bebdc909345bfd9e370edd19e4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4474,6 +4475,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 621504087}
   m_CullTransparentMesh: 1
+--- !u!114 &621504091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621504087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
+  m_AspectMode: 4
+  m_AspectRatio: 2.5925925
 --- !u!1 &637694877
 GameObject:
   m_ObjectHideFlags: 0
@@ -5496,7 +5511,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -5509,7 +5524,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -5674,45 +5689,45 @@ MonoBehaviour:
   - {fileID: 555286255}
   m_SlidePhotoSets:
   - photos:
-    - {fileID: 21300000, guid: 9b244ce8d465c49449c8fcd4db289201, type: 3}
-    - {fileID: 21300000, guid: fd724ee76eb494243a7fddfb5a536a3e, type: 3}
-    - {fileID: 21300000, guid: 9ebfceda714d974429393fbdd4fcefd2, type: 3}
+    - {fileID: 21300000, guid: 809e1ce65a70fa64c8209df499f6ddcc, type: 3}
+    - {fileID: 21300000, guid: 7a9efabc4af80674b883b7214834445c, type: 3}
+    - {fileID: 21300000, guid: d982ffbff2c559d4287c877b28ac474d, type: 3}
     labels:
-    - BMU Front Entrance
-    - Student Collaborative Quad
-    - Academic Campus Skyline
+    - Our Founder, Shri Brijmohan Lall Munjal
+    - Student Learning & Collaboration
+    - Campus Skyline
   - photos:
-    - {fileID: 21300000, guid: 894173bd7e8e316468511b3cc94e5244, type: 3}
-    - {fileID: 21300000, guid: 34a7bbf1829cecd4082b5d1093b5b10f, type: 3}
-    - {fileID: 21300000, guid: 9b8d161e7b2a2b042a40188966ca536e, type: 3}
+    - {fileID: 21300000, guid: 559f90c92ad9d98469abad3b7fac72c2, type: 3}
+    - {fileID: 21300000, guid: 16835d3a404839f42a921f155bd9ab84, type: 3}
+    - {fileID: 21300000, guid: 5273d017c15a0cf45ac9e848c657add4, type: 3}
     labels:
-    - Annual Convocation Hall
+    - Annual Convocation
     - Industry Collaboration
-    - Research Excellence Awards
+    - Research & Academic Excellence
   - photos:
-    - {fileID: 21300000, guid: dcd9da92e3fdbfa4786bceb34f977bcb, type: 3}
-    - {fileID: 21300000, guid: 206b1e6d99bb8524c87cff8cb096272f, type: 3}
-    - {fileID: 21300000, guid: 60439558d51b8a446a693dfdb3d80beb, type: 3}
+    - {fileID: 21300000, guid: 0f83370cf1b014d419ab4ae7fe385b3e, type: 3}
+    - {fileID: 21300000, guid: dba7132709788b44baa602bbe0cadeda, type: 3}
+    - {fileID: 21300000, guid: c3f2c419d50b1874d8e633e4e76e9323, type: 3}
     labels:
-    - Advanced Robotics Testing
-    - Management Case Discussion
-    - Moot Courtroom Sessions
+    - Advanced Engineering & Robotics
+    - Management Case Discussions
+    - Moot Court & Legal Learning
   - photos:
-    - {fileID: 21300000, guid: db2f8e26b78757f4c939237ed1563292, type: 3}
-    - {fileID: 21300000, guid: 7874bce75c7dd554a9e640c1feacea44, type: 3}
-    - {fileID: 21300000, guid: 5bb5699d3e3c2c448940f107d6cdf3d8, type: 3}
+    - {fileID: 21300000, guid: 15704b5e4b78a844e8e6a742e69e7ce0, type: 3}
+    - {fileID: 21300000, guid: 64953dd9f7971964caa30dcdbde044ec, type: 3}
+    - {fileID: 21300000, guid: 9a98dd13b74519f418052c186efd8bb4, type: 3}
     labels:
-    - Central Library & Atrium
-    - IoT & Electronics Studio
-    - Smart Tiered Auditorium
+    - Central Library & Learning Spaces
+    - IoT, Robotics & Engineering Laboratories
+    - Student Residences & Campus Facilities
   - photos:
-    - {fileID: 21300000, guid: 8194d6021e1414542bb7badc1dff2a47, type: 3}
-    - {fileID: 21300000, guid: eb7ecd6d2387fbf48af3bb0c2945e403, type: 3}
-    - {fileID: 21300000, guid: 9849cee5ffd9f7249b12e20ae37e2b3c, type: 3}
+    - {fileID: 21300000, guid: 3b2d6c3490c0d8c458155dcc6fbbf24d, type: 3}
+    - {fileID: 21300000, guid: 0659f0585d0dd744aa5d5e0b3c396963, type: 3}
+    - {fileID: 21300000, guid: f8fed1434a891c94097263b88f72c291, type: 3}
     labels:
-    - 67th Milestone Rock Night
-    - Inter-University Sports Arena
-    - Student Technical Hackathon
+    - "67th Milestone \u2013 Hero's Challenge"
+    - Workshops, Cultural Events & Student Initiatives
+    - Inter-University Sports & Competitions
   m_BtnSelectNorthBlock: {fileID: 345880120}
   m_BtnSelectGateway: {fileID: 847045342}
   m_BtnSelectWorkshop: {fileID: 1019534769}
@@ -5728,16 +5743,34 @@ MonoBehaviour:
   m_BtnMinimize: {fileID: 253914629}
   m_LocationPhotoSprites:
   - {fileID: 21300000, guid: dda73103618d8b9469234790ba32b7f0, type: 3}
-  - {fileID: 21300000, guid: 711645d3408fb944c8f02814f0c8998e, type: 3}
-  - {fileID: 21300000, guid: 7ce129790c7c08743b4bacd050eed1e2, type: 3}
+  - {fileID: 21300000, guid: 60bd4bcc758e06747ba4efc3369f4756, type: 3}
+  - {fileID: 21300000, guid: 0da031514407c7a4c917b5ecf607fe8b, type: 3}
   - {fileID: 21300000, guid: 644df9fb0f427d24285e58c23c1fba7f, type: 3}
-  - {fileID: 21300000, guid: 7e2e168a096a4454fb5b3b05d607c61d, type: 3}
-  - {fileID: 21300000, guid: 88fa95ee48e729648b167304e2013daf, type: 3}
-  - {fileID: 21300000, guid: caae75506bf92b94088cec68280c9e47, type: 3}
-  - {fileID: 21300000, guid: 09e86875e75dc834e831ff211adffefc, type: 3}
-  - {fileID: 21300000, guid: 2acd61a4aca16ea48b92349eb89d9d50, type: 3}
-  - {fileID: 21300000, guid: f18189e7dade999459910922b0f6c34e, type: 3}
-  - {fileID: 21300000, guid: 8ea3161ef3e568649be9bbd49b98e97b, type: 3}
+  - {fileID: 21300000, guid: 3e1d14973cadd944ea9abd61bb135365, type: 3}
+  - {fileID: 21300000, guid: 76f1e9a5dbb651245bd0d2c8e5443d2f, type: 3}
+  - {fileID: 21300000, guid: 1c49eeef45c3d204abc3b92da92fa25e, type: 3}
+  - {fileID: 21300000, guid: 8c6e9908c0f053c4aad18b7779cb2634, type: 3}
+  - {fileID: 21300000, guid: 3b6cf1d235817ae47bda428d8cee06ed, type: 3}
+  - {fileID: 21300000, guid: 648de82f97d717e458127e087156966c, type: 3}
+  - {fileID: 21300000, guid: 4719c8304f69b974cbb5825bd5b894a1, type: 3}
+  - {fileID: 21300000, guid: 1d089c77a7009bc41b17d8464dafc730, type: 3}
+  - {fileID: 21300000, guid: d4de43b365324314fbe0ceadd20990b1, type: 3}
+  - {fileID: 21300000, guid: 64fa6994ac1acd34da763b5e20f95da4, type: 3}
+  m_LocationCardSprites:
+  - {fileID: 0}
+  - {fileID: 21300000, guid: 803397a35eaa2574aadb6140d6b534dc, type: 3}
+  - {fileID: 21300000, guid: 427216e59e06f4a4181d599dfb5c81d0, type: 3}
+  - {fileID: 0}
+  - {fileID: 21300000, guid: a5d4ddae447f9ae4c9bfe30a46f77518, type: 3}
+  - {fileID: 21300000, guid: 686a98a61d2cad443ba93e3565e14e16, type: 3}
+  - {fileID: 21300000, guid: f04c50bebdc909345bfd9e370edd19e4, type: 3}
+  - {fileID: 21300000, guid: b8b3760db2b4fd840b95eaf83785cfe2, type: 3}
+  - {fileID: 21300000, guid: 845013bf5065bd046ae0b4a5bf104595, type: 3}
+  - {fileID: 21300000, guid: b211150393aca1349a056790f3d708be, type: 3}
+  - {fileID: 21300000, guid: 022378289f27f5a4ea1b18b277dc505a, type: 3}
+  - {fileID: 21300000, guid: 0b9f97e8eeb22fd4e8159d70ad9ad99f, type: 3}
+  - {fileID: 21300000, guid: 0723b766698255742a61eddc936eba85, type: 3}
+  - {fileID: 21300000, guid: b29a6ba5408afb94cad9d301988cc8a0, type: 3}
   m_InternalHubTag: {fileID: 0}
   m_InternalHubTitle: {fileID: 1643981739}
   m_InternalHubFooter: {fileID: 478929278}
@@ -6280,6 +6313,7 @@ GameObject:
   - component: {fileID: 833863823}
   - component: {fileID: 833863825}
   - component: {fileID: 833863824}
+  - component: {fileID: 833863826}
   m_Layer: 0
   m_Name: CardPhoto
   m_TagString: Untagged
@@ -6326,7 +6360,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 711645d3408fb944c8f02814f0c8998e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 803397a35eaa2574aadb6140d6b534dc, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -6344,6 +6378,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 833863822}
   m_CullTransparentMesh: 1
+--- !u!114 &833863826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 833863822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
+  m_AspectMode: 4
+  m_AspectRatio: 2.5925925
 --- !u!1 &834724608
 GameObject:
   m_ObjectHideFlags: 0
@@ -7539,9 +7587,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9ebfceda714d974429393fbdd4fcefd2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d982ffbff2c559d4287c877b28ac474d, type: 3}
   m_Type: 1
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -8124,7 +8172,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -8137,7 +8185,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -8778,7 +8826,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -8895,7 +8943,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: dda73103618d8b9469234790ba32b7f0, type: 3}
   m_Type: 1
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -9256,7 +9304,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -9893,7 +9941,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -9906,7 +9954,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -10652,9 +10700,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9b244ce8d465c49449c8fcd4db289201, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 809e1ce65a70fa64c8209df499f6ddcc, type: 3}
   m_Type: 1
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -11186,9 +11234,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fd724ee76eb494243a7fddfb5a536a3e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7a9efabc4af80674b883b7214834445c, type: 3}
   m_Type: 1
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -11886,6 +11934,7 @@ GameObject:
   - component: {fileID: 1758432863}
   - component: {fileID: 1758432865}
   - component: {fileID: 1758432864}
+  - component: {fileID: 1758432866}
   m_Layer: 0
   m_Name: CardPhoto
   m_TagString: Untagged
@@ -11932,7 +11981,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8ea3161ef3e568649be9bbd49b98e97b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 022378289f27f5a4ea1b18b277dc505a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -11950,6 +11999,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1758432862}
   m_CullTransparentMesh: 1
+--- !u!114 &1758432866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1758432862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
+  m_AspectMode: 4
+  m_AspectRatio: 2.5925925
 --- !u!1 &1758504909
 GameObject:
   m_ObjectHideFlags: 0
@@ -12760,7 +12823,7 @@ RectTransform:
   m_Father: {fileID: 265303168}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -12793,7 +12856,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4291265795
   m_fontColor: {r: 0.01, g: 0.52, b: 0.78, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -12806,7 +12869,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -13175,6 +13238,9 @@ MonoBehaviour:
   - key: ws-mech
     clip: {fileID: 8300000, guid: e77c371b1f3c4c64cbdc224ffb0c9d57, type: 3}
     startDelay: 0.3
+  - key: nb-classroom-2
+    clip: {fileID: 8300000, guid: c760c4797dee3df468cebd604719d8cf, type: 3}
+    startDelay: 0.3
 --- !u!1 &1882953931
 GameObject:
   m_ObjectHideFlags: 0
@@ -13403,10 +13469,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1008710114}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1972667815
 MonoBehaviour:
@@ -13438,7 +13504,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -13451,7 +13517,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -13623,7 +13689,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -13680,10 +13746,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1008710114}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1978853111
 MonoBehaviour:
@@ -13714,7 +13780,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -13727,7 +13793,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -13885,6 +13951,7 @@ GameObject:
   - component: {fileID: 2009560665}
   - component: {fileID: 2009560667}
   - component: {fileID: 2009560666}
+  - component: {fileID: 2009560668}
   m_Layer: 0
   m_Name: CardPhoto
   m_TagString: Untagged
@@ -13931,7 +13998,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 7ce129790c7c08743b4bacd050eed1e2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 427216e59e06f4a4181d599dfb5c81d0, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -13949,6 +14016,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2009560664}
   m_CullTransparentMesh: 1
+--- !u!114 &2009560668
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009560664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
+  m_AspectMode: 4
+  m_AspectRatio: 2.5925925
 --- !u!1 &2027220782
 GameObject:
   m_ObjectHideFlags: 0

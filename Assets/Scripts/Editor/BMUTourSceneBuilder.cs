@@ -838,6 +838,7 @@ namespace BMU.VRTour.Editor
             paRt.pivot = new Vector2(0.5f, 1f);
             paRt.anchoredPosition = new Vector2(0f, -15f);
             Image locPhotoImg = locPhotoArea.GetComponent<Image>();
+            locPhotoImg.preserveAspect = true;
             Sprite gatePhoto = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_front_gate.jpg");
             if (gatePhoto != null)
             {
@@ -1123,19 +1124,19 @@ namespace BMU.VRTour.Editor
             s_SpriteRoundedRectPill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_rounded_rect_pill.png");
             s_SpriteRoundedRectCircle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_rounded_rect_circle.png");
 
-            s_PhotoSlide1_Gate = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_1_gate.jpg");
-            s_PhotoSlide1_Quad = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_2_quad.jpg");
-            s_PhotoSlide1_Skyline = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_3_skyline.jpg");
+            s_PhotoSlide1_Gate = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel1_founder.jpg");
+            s_PhotoSlide1_Quad = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel2_ideas.jpg");
+            s_PhotoSlide1_Skyline = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel3_aerial.jpg");
 
             // Diffused Backlight Aura Sprites
             s_SpriteBacklightGlow = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_backlight_glow.png");
             s_SpriteBacklightGlowCircle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_backlight_glow_circle.png");
 
             // Campus Building & Room Photos
-            s_PhotoNorthBlock = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_north_block.jpg");
-            s_PhotoGateway = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_gateway.jpg");
-            s_PhotoWorkshop = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_outside_workshop.jpg");
-            s_PhotoNBClassroom = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_classroom.jpg");
+            s_PhotoNorthBlock = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/06_hubcard_nb1.png");
+            s_PhotoGateway = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/06_hubcard_gateway.png");
+            s_PhotoWorkshop = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/06_hubcard_mechextc.png");
+            s_PhotoNBClassroom = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/08_hubcard_smartc.png");
             s_PhotoNBLab = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_lab.jpg");
             s_PhotoNBFaculty = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_nb_faculty.jpg");
             s_PhotoGWClassroom = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/zone_gw_classroom.jpg");
@@ -1150,9 +1151,9 @@ namespace BMU.VRTour.Editor
             sets[0] = new CampusTourManager.SlidePhotoData
             {
                 photos = new Sprite[] {
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_1_gate.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_2_quad.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_1_photo_3_skyline.jpg")
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel1_founder.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel2_ideas.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/01_carousel3_aerial.jpg")
                 },
                 labels = new string[] { "Our Founder, Shri Brijmohan Lall Munjal", "Student Learning & Collaboration", "Campus Skyline" }
             };
@@ -1161,9 +1162,9 @@ namespace BMU.VRTour.Editor
             sets[1] = new CampusTourManager.SlidePhotoData
             {
                 photos = new Sprite[] {
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_2_photo_1_convocation.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_2_photo_2_industry.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_2_photo_3_research.jpg")
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/02_carousel1_convo.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/02_carousel2_capebreton.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/02_carousel3_coe.jpg")
                 },
                 labels = new string[] { "Annual Convocation", "Industry Collaboration", "Research & Academic Excellence" }
             };
@@ -1172,9 +1173,9 @@ namespace BMU.VRTour.Editor
             sets[2] = new CampusTourManager.SlidePhotoData
             {
                 photos = new Sprite[] {
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_3_photo_1_robotics.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_3_photo_2_management.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_3_photo_3_mootcourt.jpg")
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/03_carousel1_robot.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/03_carousel2_mgmt.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/03_carousel3_moot.jpg")
                 },
                 labels = new string[] { "Advanced Engineering & Robotics", "Management Case Discussions", "Moot Court & Legal Learning" }
             };
@@ -1183,9 +1184,9 @@ namespace BMU.VRTour.Editor
             sets[3] = new CampusTourManager.SlidePhotoData
             {
                 photos = new Sprite[] {
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_4_photo_1_library.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_4_photo_2_iot.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_4_photo_3_auditorium.jpg")
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/04_carousel1_library.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/04_carousel2_iotlab.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/04_carousel3_hostel.jpg")
                 },
                 labels = new string[] { "Central Library & Learning Spaces", "IoT, Robotics & Engineering Laboratories", "Student Residences & Campus Facilities" }
             };
@@ -1194,9 +1195,9 @@ namespace BMU.VRTour.Editor
             sets[4] = new CampusTourManager.SlidePhotoData
             {
                 photos = new Sprite[] {
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_5_photo_1_rocknight.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_5_photo_2_sports.jpg"),
-                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/slide_5_photo_3_hackathon.jpg")
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/05_carousel1_bike.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/05_carousel2_planting.jpg"),
+                    AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/PanelImages/05_carousel3_archery.jpg")
                 },
                 labels = new string[] { "67th Milestone – Hero's Challenge", "Workshops, Cultural Events & Student Initiatives", "Inter-University Sports & Competitions" }
             };
@@ -1206,35 +1207,67 @@ namespace BMU.VRTour.Editor
             // Location / room photos (same keys and order as CampusTourManager.InitializeTourData locKeys)
             Sprite[] locSprites = LoadLocationPhotos();
             SetPrivateField(tourManager, "m_LocationPhotoSprites", locSprites);
+            SetPrivateField(tourManager, "m_LocationCardSprites", LoadLocationCardPhotos());
         }
 
         /// <summary>Photos for the hub / room cards. KEEP IN SYNC with CampusTourManager's locKeys: same keys, same order.</summary>
         private static Sprite[] LoadLocationPhotos()
         {
+            // Detail-panel photos (MAPPING.csv "detail photo"). Keys without a mapping keep their previous photo.
             string[] files =
             {
-                "zone_front_gate",            // front-gate
-                "zone_outside_north_block",   // outside-north-block
-                "zone_nb_classroom",          // nb-classroom (NB-105)
-                "zone_nb_classroom_2",        // nb-classroom-2 (standard classroom)
-                "zone_nb_lab",                // nb-lab
-                "zone_nb_faculty",            // nb-faculty
-                "zone_outside_gateway",       // outside-gateway
-                "zone_gw_arvr_lab",           // gw-ai-lab (GA_Lab) - photo file still has the old AR-VR name; needs a real AI Lab photo
-                "zone_gw_program_office",     // gw-office (GA_Office)
-                "zone_gw_auditorium",         // gw-auditorium (GA_Auditorium)
-                "zone_outside_workshop",      // outside-workshop
-                "zone_outside_workshop",      // ws-foyer  (Manufacturing Process Lab) - placeholder photo
-                "zone_outside_workshop",      // ws-hall   (KUKA Robotics Laboratory)  - placeholder photo
-                "zone_outside_workshop"       // ws-mech   (Mechatronics Laboratory)   - placeholder photo
+                "Assets/Textures/Photos/zone_front_gate.jpg",   // front-gate (not in MAPPING.csv)
+                PanelImageDir + "07_exterior_nb1.jpg",          // outside-north-block (S07)
+                PanelImageDir + "09_room_smart.jpg",            // nb-classroom (S09)
+                "Assets/Textures/Photos/zone_nb_classroom_2.jpg", // nb-classroom-2 (not in MAPPING.csv)
+                PanelImageDir + "10_room_arvr.jpg",             // nb-lab (S10)
+                PanelImageDir + "11_room_faculty.jpg",          // nb-faculty (S11)
+                PanelImageDir + "12_exterior_gateway.jpg",      // outside-gateway (S12)
+                PanelImageDir + "15_room_ai.jpg",               // gw-ai-lab (S15)
+                PanelImageDir + "14_room_prog.jpg",             // gw-office (S14)
+                PanelImageDir + "16_room_audi.jpg",             // gw-auditorium (S16)
+                PanelImageDir + "17_exterior_mechext.jpg",      // outside-workshop (S17)
+                PanelImageDir + "19_room_hall.jpg",             // ws-foyer (S19)
+                PanelImageDir + "20_room_kuka.jpg",             // ws-hall (S20)
+                PanelImageDir + "21_room_mech.jpg"              // ws-mech (S21)
             };
-            var sprites = new Sprite[files.Length];
-            for (int i = 0; i < files.Length; i++)
-                sprites[i] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/Photos/" + files[i] + ".jpg");
+            return LoadSprites(files);
+        }
+
+        /// <summary>Wide hub-card images, same keys/order as LoadLocationPhotos. Null = no card image (keeps the detail photo).</summary>
+        private static Sprite[] LoadLocationCardPhotos()
+        {
+            string[] files =
+            {
+                null,                                      // front-gate
+                PanelImageDir + "06_hubcard_nb1.png",      // outside-north-block
+                PanelImageDir + "08_hubcard_smartc.png",   // nb-classroom
+                null,                                      // nb-classroom-2 (not in MAPPING.csv)
+                PanelImageDir + "08_hubcard_arvrc.png",    // nb-lab
+                PanelImageDir + "08_hubcard_faculty.png",  // nb-faculty
+                PanelImageDir + "06_hubcard_gateway.png",  // outside-gateway
+                PanelImageDir + "13_hubcard_aic.png",      // gw-ai-lab
+                PanelImageDir + "13_hubcard_progc.png",    // gw-office
+                PanelImageDir + "13_hubcard_audic.png",    // gw-auditorium
+                PanelImageDir + "06_hubcard_mechextc.png", // outside-workshop
+                PanelImageDir + "18_hubcard_hallc.png",    // ws-foyer
+                PanelImageDir + "18_hubcard_kuka.png",     // ws-hall
+                PanelImageDir + "18_hubcard_mech.png"      // ws-mech
+            };
+            return LoadSprites(files);
+        }
+
+        private const string PanelImageDir = "Assets/Art/PanelImages/";
+
+        private static Sprite[] LoadSprites(string[] paths)
+        {
+            var sprites = new Sprite[paths.Length];
+            for (int i = 0; i < paths.Length; i++)
+                sprites[i] = paths[i] == null ? null : AssetDatabase.LoadAssetAtPath<Sprite>(paths[i]);
             return sprites;
         }
 
-        /// <summary>Re-applies the room photo list to the CampusTourManager in Master_Tour_Core without rebuilding the scene.</summary>
+        /// <summary>Re-applies every panel image (carousel, hub cards, detail photos) to Master_Tour_Core without rebuilding the scene.</summary>
         [MenuItem("BMU VR Tour/Sync Room Photos Into Master Scene", false, 21)]
         public static void SyncRoomPhotosIntoMasterScene()
         {
@@ -1242,16 +1275,59 @@ namespace BMU.VRTour.Editor
             var scene = EditorSceneManager.OpenScene("Assets/Scenes/Master_Tour_Core.unity", OpenSceneMode.Single);
             var tm = UnityEngine.Object.FindFirstObjectByType<CampusTourManager>();
             if (tm == null) { Debug.LogError("[BMU VR Tour] CampusTourManager not found in Master_Tour_Core."); return; }
+            LoadAssets();
+
+            int missing = 0;
             SerializedObject so = new SerializedObject(tm);
-            SerializedProperty arr = so.FindProperty("m_LocationPhotoSprites");
-            Sprite[] sprites = LoadLocationPhotos();
+            missing += AssignSpriteArray(so.FindProperty("m_LocationPhotoSprites"), LoadLocationPhotos());
+            missing += AssignSpriteArray(so.FindProperty("m_LocationCardSprites"), LoadLocationCardPhotos());
+
+            // Carousel sets: rebuild through the same code path the full build uses
+            so.ApplyModifiedPropertiesWithoutUndo();
+            PopulatePhotoSets(tm);
+            so.Update();
+
+            // Scene objects that hold a baked sprite
+            SetCardPhoto("Card_NorthBlock", s_PhotoNorthBlock, ref missing);
+            SetCardPhoto("Card_Gateway", s_PhotoGateway, ref missing);
+            SetCardPhoto("Card_Workshop", s_PhotoWorkshop, ref missing);
+            SetCardPhoto("RoomCardTemplate", s_PhotoNBClassroom, ref missing);
+            var polaroids = new SerializedObject(tm).FindProperty("m_PolaroidImages");
+            if (polaroids != null)
+                for (int i = 0; i < polaroids.arraySize && i < 3; i++)
+                {
+                    var img = polaroids.GetArrayElementAtIndex(i).objectReferenceValue as Image;
+                    var sp = AssetDatabase.LoadAssetAtPath<Sprite>(PanelImageDir + new[] { "01_carousel1_founder.jpg", "01_carousel2_ideas.jpg", "01_carousel3_aerial.jpg" }[i]);
+                    if (img != null && sp != null) { img.sprite = sp; img.preserveAspect = true; EditorUtility.SetDirty(img); } else missing++;
+                }
+            var locImg = new SerializedObject(tm).FindProperty("m_LocPhotoCardImage")?.objectReferenceValue as Image;
+            if (locImg != null) { locImg.preserveAspect = true; EditorUtility.SetDirty(locImg); }
+
+            EditorUtility.SetDirty(tm);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"[BMU VR Tour] Synced panel images into Master_Tour_Core ({missing} missing).");
+        }
+
+        private static int AssignSpriteArray(SerializedProperty arr, Sprite[] sprites)
+        {
+            arr.serializedObject.Update();
             arr.arraySize = sprites.Length;
             int missing = 0;
             for (int i = 0; i < sprites.Length; i++) { arr.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i]; if (sprites[i] == null) missing++; }
-            so.ApplyModifiedPropertiesWithoutUndo();
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log($"[BMU VR Tour] Synced {sprites.Length} location photos into Master_Tour_Core ({missing} missing).");
+            arr.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            return missing;
+        }
+
+        private static void SetCardPhoto(string cardName, Sprite sprite, ref int missing)
+        {
+            GameObject card = null;
+            foreach (var t in Resources.FindObjectsOfTypeAll<Transform>())
+                if (t.name == cardName && t.gameObject.scene.IsValid()) { card = t.gameObject; break; }
+            var photo = card != null ? (card.transform.Find("PhotoContainer/CardPhoto")?.GetComponent<Image>()) : null;
+            if (photo == null || sprite == null) { missing++; return; }
+            CampusTourManager.ApplyFillCropSprite(photo, sprite);
+            EditorUtility.SetDirty(photo);
         }
 
         private static GameObject CreatePanel(string name, Transform parent, Color color, float width, float height, Sprite sprite = null)
@@ -1754,8 +1830,7 @@ namespace BMU.VRTour.Editor
             photoImg.raycastTarget = false;
             if (photoSprite != null)
             {
-                photoImg.sprite = photoSprite;
-                photoImg.color = Color.white;
+                CampusTourManager.ApplyFillCropSprite(photoImg, photoSprite); // fill-crop, never stretch
             }
             else
             {

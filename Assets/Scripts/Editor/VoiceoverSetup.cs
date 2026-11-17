@@ -39,6 +39,13 @@ namespace BMU.VRTour.Editor
             (19, "m_LocationInfoPanel",        "ws-foyer"),
             (20, "m_LocationInfoPanel",        "ws-hall"),
             (21, "m_LocationInfoPanel",        "ws-mech"),
+            (22, "m_LocationInfoPanel",        "nb-classroom-2"), // Standard Classroom (file: standard_room.mp3)
+        };
+
+        // Clips whose file name does not start with their clip number.
+        private static readonly Dictionary<string, int> NameAliases = new Dictionary<string, int>
+        {
+            { "standard_room", 22 },
         };
 
         private static Dictionary<int, AudioClip> LoadClipsByNumber()
@@ -48,9 +55,13 @@ namespace BMU.VRTour.Editor
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 string file = System.IO.Path.GetFileNameWithoutExtension(path);
-                int digits = 0;
-                while (digits < file.Length && char.IsDigit(file[digits])) digits++;
-                if (digits == 0 || !int.TryParse(file.Substring(0, digits), out int n)) continue;
+                int n;
+                if (!NameAliases.TryGetValue(file, out n))
+                {
+                    int digits = 0;
+                    while (digits < file.Length && char.IsDigit(file[digits])) digits++;
+                    if (digits == 0 || !int.TryParse(file.Substring(0, digits), out n)) continue;
+                }
                 result[n] = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
             }
             return result;
