@@ -342,6 +342,11 @@ namespace BMU.VRTour
 
             m_IsPressed = true;
             m_TargetScale = m_OriginalScale * m_PressScale;
+
+            if (CampusTourManager.Instance != null)
+            {
+                CampusTourManager.Instance.PlayButtonClickSound();
+            }
         }
 
         public void OnPointerUp(PointerEventData eventData)

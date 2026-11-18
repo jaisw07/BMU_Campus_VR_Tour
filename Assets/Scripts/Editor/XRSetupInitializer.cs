@@ -24,7 +24,6 @@ namespace BMU.VRTour.Editor
         private const string SettingsAssetPath = "Assets/XR/XRGeneralSettingsPerBuildTarget.asset";
         private const string OpenXRLoaderPath = "Assets/XR/Loaders/OpenXRLoader.asset";
         private const string InteractionLayerSettingsPath = "Assets/XRI/Settings/Resources/InteractionLayerSettings.asset";
-        private static bool s_IsBuildingScene = false;
 
         static XRSetupInitializer()
         {
@@ -65,27 +64,6 @@ namespace BMU.VRTour.Editor
                 Debug.Log("[XRSetup] XR Plug-in Management and OpenXR successfully configured & validated!");
 
                 VerifyXRConfiguration();
-
-                // Automatically rebuild the VR Tour Scene to apply interactor line visuals, event system, and ground collider fixes
-                if (!s_IsBuildingScene && !EditorApplication.isPlayingOrWillChangePlaymode)
-                {
-                    s_IsBuildingScene = true;
-                    EditorApplication.delayCall += () =>
-                    {
-                        try
-                        {
-                            BMUTourSceneBuilder.BuildCompleteScene();
-                        }
-                        catch (Exception bEx)
-                        {
-                            Debug.LogError($"[XRSetup] Error rebuilding VR Tour Scene: {bEx}");
-                        }
-                        finally
-                        {
-                            s_IsBuildingScene = false;
-                        }
-                    };
-                }
             }
             catch (Exception ex)
             {

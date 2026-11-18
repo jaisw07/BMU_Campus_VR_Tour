@@ -12,8 +12,8 @@ namespace BMU.VRTour
     public class FirstPersonWalker : MonoBehaviour
     {
         [SerializeField] private Transform m_Head;
-        [SerializeField] private float m_WalkSpeed = 2.5f;
-        [SerializeField] private float m_RunSpeed = 5f;
+        [SerializeField] private float m_WalkSpeed = 12f;
+        [SerializeField] private float m_RunSpeed = 20f;
         [SerializeField] private float m_LookSensitivity = 0.1f;
         [SerializeField] private float m_Gravity = -15f;
         [SerializeField] private float m_Acceleration = 12f;

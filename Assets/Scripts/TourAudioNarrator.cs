@@ -70,6 +70,11 @@ namespace BMU.VRTour
             {
                 m_AudioToggleButton.onClick.AddListener(ToggleMute);
             }
+            else if (m_Voice != null)
+            {
+                // Mute button removed from simplified UI: ensure persisted mute never silences narration.
+                m_Voice.SetMuted(false);
+            }
 
             UpdateMuteVisuals();
         }

@@ -134,11 +134,7 @@ namespace BMU.VRTour.Editor
         {
             string[] required =
             {
-                "Assets/Scenes/Master_Tour_Core.unity",
                 "Assets/Scenes/Scene_Campus_Exterior.unity",
-                "Assets/Scenes/Scene_NorthBlock_Interiors.unity",
-                "Assets/Scenes/Scene_Gateway_Interiors.unity",
-                "Assets/Scenes/BMU_Workshop_Interior.unity", // ws-foyer / ws-hall navigation targets
             };
             var list = required
                 .Where(File.Exists)

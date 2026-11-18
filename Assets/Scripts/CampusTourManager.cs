@@ -1,22 +1,26 @@
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using UnityEngine.InputSystem;
-using UnityEngine.XR;
+using TMPro;
+using Unity.XR.CoreUtils;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using UnityEngine.XR.Interaction.Toolkit.Inputs;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 namespace BMU.VRTour
 {
     /// <summary>
-    /// Master VR Tour Controller for BML Munjal University Campus Walkthrough.
-    /// Manages the tour state machine, 3D carousel, destination selector, interior hubs,
-    /// location info panels, VR transitions, and thumbstick navigation.
+    /// Master VR Tour Controller for BML Munjal University Exterior Free-Roam Walkthrough.
+    /// Shows the Main Gate 5-slide intro carousel (Prev / Next / Skip Intro) or the simplified
+    /// exterior Location Info panel when the user enters UI_popup* / UI popup* trigger zones.
     /// </summary>
     public class CampusTourManager : MonoBehaviour
     {
@@ -48,45 +52,28 @@ namespace BMU.VRTour
             public string[] features;
             public string caption;
             public string narration;
-            public bool hasInterior;
-            public string buildingKey; // e.g. "north-block", "gateway", "workshop"
-            public Sprite photo;      // detail-panel photo (right side of the info panel)
-            public Sprite cardPhoto;  // wide hub-card image
-        }
-
-        [System.Serializable]
-        public class RoomData
-        {
-            public string key;
-            public string buildingKey;
-            public string name;
-            public string badge;
-            [TextArea(2, 4)] public string description;
-            public string[] highlights;
-            public string narration;
-            public Sprite photo;      // detail-panel photo (right side of the info panel)
-            public Sprite cardPhoto;  // wide hub-card image
-            // Optional overrides (empty = legacy behaviour): info-panel tag line and short hub-card description.
-            public string zoneTag;
-            public string cardDescription;
+            public Sprite photo;
+            public Sprite[] galleryPhotos;
         }
 
         // ====================================================================
         // INSPECTOR REFERENCES
         // ====================================================================
-        [Header("Header HUD")]
-        [SerializeField] private TextMeshProUGUI m_HeaderLocationText;
-        [SerializeField] private Button m_BtnResetTour;
-        [SerializeField] private Button m_BtnRecenterUI;
+        [Header("Locomotion")]
+        [SerializeField] private float m_WalkSpeed = 16.0f;
+
+        [Header("Audio")]
+        [SerializeField] private AudioClip m_AmbientClip;
+        [SerializeField, Range(0f, 1f)] private float m_AmbientVolume = 0.25f;
+        [SerializeField] private AudioClip m_ButtonClickClip;
+        [SerializeField, Range(0f, 1f)] private float m_ButtonClickVolume = 0.85f;
+
+        [Header("Follow & Stage Panels")]
         [SerializeField] private LazyFollowUI m_LazyFollowUI;
-
-        [Header("Stage Panels")]
         [SerializeField] private GameObject m_IntroCarouselPanel;
-        [SerializeField] private GameObject m_CampusHubPanel;
         [SerializeField] private GameObject m_LocationInfoPanel;
-        [SerializeField] private GameObject m_InternalBuildingHubPanel;
 
-        [Header("Intro Carousel Elements")]
+        [Header("Intro Carousel Elements (Main Gate)")]
         [SerializeField] private TextMeshProUGUI m_SlideBadgeText;
         [SerializeField] private TextMeshProUGUI m_SlideTitleText;
         [SerializeField] private TextMeshProUGUI m_SlideDescText;
@@ -107,54 +94,30 @@ namespace BMU.VRTour
         }
         [SerializeField] private SlidePhotoData[] m_SlidePhotoSets = new SlidePhotoData[5];
 
-        [Header("Campus Hub Elements")]
-        [SerializeField] private Button m_BtnSelectNorthBlock;
-        [SerializeField] private Button m_BtnSelectGateway;
-        [SerializeField] private Button m_BtnSelectWorkshop;
-
-        [Header("Location Info Panel Elements")]
+        [Header("Location Info Panel Elements (Exterior Buildings)")]
         [SerializeField] private TextMeshProUGUI m_LocZoneTag;
         [SerializeField] private TextMeshProUGUI m_LocHeading;
         [SerializeField] private TextMeshProUGUI m_LocSummary;
         [SerializeField] private TextMeshProUGUI m_LocFeaturesList;
         [SerializeField] private TextMeshProUGUI m_LocPhotoCaption;
         [SerializeField] private Image m_LocPhotoCardImage;
-        [SerializeField] private Button m_BtnExploreInterior;
-        [SerializeField] private Button m_BtnNextLocation;
-        [SerializeField] private Button m_BtnCampusHubReturn;
-        [SerializeField] private Button m_BtnMinimize;
-        [SerializeField] private Sprite[] m_LocationPhotoSprites = new Sprite[9];
-        [SerializeField] private Sprite[] m_LocationCardSprites = new Sprite[14]; // wide hub-card images, index-aligned with m_LocationPhotoSprites
-
-        [Header("Internal Building Hub Elements")]
-        [SerializeField] private TextMeshProUGUI m_InternalHubTag;
-        [SerializeField] private TextMeshProUGUI m_InternalHubTitle;
-        [Tooltip("Optional footer under the room cards; shown on the Workshop hub as '<n> Internal Spaces'.")]
-        [SerializeField] private TextMeshProUGUI m_InternalHubFooter;
-        [SerializeField] private Button m_BtnBackToPlaza;
-        [SerializeField] private Button m_BtnBackToCampusHub;
-        [SerializeField] private Transform m_RoomCardsContainer;
-        [SerializeField] private GameObject m_RoomCardTemplate;
-
-        [Header("Minimized Dock Orb")]
-        [SerializeField] private MinimizedDockOrb m_DockOrb;
-        [SerializeField] private Button m_BtnRestoreOrb;
-
-        [Header("Thumbstick Input")]
-        [SerializeField] private float m_ThumbstickThreshold = 0.65f;
-        [SerializeField] private float m_ThumbstickCooldown = 0.35f;
+        [SerializeField] private Sprite[] m_LocationPhotoSprites = new Sprite[11];
+        [SerializeField] private Sprite[] m_FoodOutletGallerySprites = new Sprite[4];
 
         // ====================================================================
         // STATE VARIABLES
         // ====================================================================
         private int m_CurrentSlideIndex = 0;
-        private string m_CurrentLocationKey = "front-gate";
-        private string m_CurrentBuildingContext = "north-block";
-        private float m_LastThumbstickTime = 0f;
+        private string m_CurrentActiveZoneKey = "";
+        private Coroutine m_GalleryCycleRoutine;
+        private AudioSource m_AmbientSource;
+        private AudioSource m_UiSfxSource;
+        private bool m_ConfiguredSimulatorSpeed = false;
+        private XROrigin m_CachedXROrigin;
+        private CharacterController m_CachedCC;
 
-        private List<CarouselSlideData> m_Slides = new List<CarouselSlideData>();
-        private Dictionary<string, LocationData> m_Locations = new Dictionary<string, LocationData>();
-        private List<RoomData> m_Rooms = new List<RoomData>();
+        private readonly List<CarouselSlideData> m_Slides = new List<CarouselSlideData>();
+        private readonly Dictionary<string, LocationData> m_Locations = new Dictionary<string, LocationData>();
 
         private void Awake()
         {
@@ -163,57 +126,166 @@ namespace BMU.VRTour
 
             EnsureRuntimeSafeguards();
             InitializeTourData();
+            SetupAudioSources();
+            HideAllPanels();
+        }
+
+        private void SetupAudioSources()
+        {
+            if (m_AmbientClip != null && m_AmbientSource == null)
+            {
+                GameObject ambObj = new GameObject("Ambient_Audio_Source");
+                ambObj.transform.SetParent(transform, false);
+                m_AmbientSource = ambObj.AddComponent<AudioSource>();
+                m_AmbientSource.clip = m_AmbientClip;
+                m_AmbientSource.loop = true;
+                m_AmbientSource.playOnAwake = false;
+                m_AmbientSource.spatialBlend = 0f;
+                m_AmbientSource.volume = m_AmbientVolume;
+                m_AmbientSource.Play();
+            }
+
+            if (m_UiSfxSource == null)
+            {
+                GameObject sfxObj = new GameObject("UI_SFX_Audio_Source");
+                sfxObj.transform.SetParent(transform, false);
+                m_UiSfxSource = sfxObj.AddComponent<AudioSource>();
+                m_UiSfxSource.loop = false;
+                m_UiSfxSource.playOnAwake = false;
+                m_UiSfxSource.spatialBlend = 0f;
+            }
+        }
+
+        public void PlayButtonClickSound()
+        {
+            if (m_ButtonClickClip == null) return;
+            if (m_UiSfxSource == null) SetupAudioSources();
+            if (m_UiSfxSource != null)
+            {
+                m_UiSfxSource.PlayOneShot(m_ButtonClickClip, m_ButtonClickVolume);
+            }
         }
 
         private void Start()
         {
             EnsureRuntimeSafeguards();
             WireButtonListeners();
-            StartTourFromBeginning();
+            HideAllPanels();
+            TryConfigureXRSimulatorSpeed();
+        }
+
+        private void Update()
+        {
+            if (!m_ConfiguredSimulatorSpeed)
+            {
+                TryConfigureXRSimulatorSpeed();
+            }
+
+            HandleGamepadJoystickMovement();
+        }
+
+        private void TryConfigureXRSimulatorSpeed()
+        {
+            var sim = Object.FindAnyObjectByType<XRInteractionSimulator>();
+            if (sim != null)
+            {
+                float baseSpeed = Mathf.Max(0.01f, sim.translateZSpeed);
+                sim.bodyTranslateMultiplier = m_WalkSpeed / baseSpeed;
+                m_ConfiguredSimulatorSpeed = true;
+                Debug.Log($"[CampusTourManager] Configured XRInteractionSimulator bodyTranslateMultiplier={sim.bodyTranslateMultiplier:F1} (effective speed={m_WalkSpeed:F1} m/s).");
+            }
+        }
+
+        private void HandleGamepadJoystickMovement()
+        {
+            if (Gamepad.current == null) return;
+
+            Vector2 left = Gamepad.current.leftStick.ReadValue();
+            Vector2 right = Gamepad.current.rightStick.ReadValue();
+            Vector2 combined = Vector2.ClampMagnitude(left + right, 1f);
+            if (combined.sqrMagnitude < 0.02f) return;
+
+            if (m_CachedXROrigin == null) m_CachedXROrigin = Object.FindAnyObjectByType<XROrigin>();
+            if (m_CachedXROrigin == null) return;
+            if (m_CachedCC == null) m_CachedCC = m_CachedXROrigin.GetComponent<CharacterController>();
+
+            Transform cam = m_CachedXROrigin.Camera != null ? m_CachedXROrigin.Camera.transform : Camera.main?.transform;
+            Vector3 fwd = cam != null ? Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized : m_CachedXROrigin.transform.forward;
+            if (fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
+            Vector3 rightVec = new Vector3(fwd.z, 0f, -fwd.x);
+
+            Vector3 motion = (rightVec * combined.x + fwd * combined.y) * (m_WalkSpeed * Time.deltaTime);
+            if (m_CachedCC != null && m_CachedCC.enabled)
+            {
+                m_CachedCC.Move(motion);
+            }
+            else
+            {
+                m_CachedXROrigin.transform.position += motion;
+            }
         }
 
         private void EnsureRuntimeSafeguards()
         {
-            // 1. Ensure worldCamera is bound on Canvas (which automatically sets raycaster.eventCamera)
             Canvas canvas = GetComponentInChildren<Canvas>(true);
             if (canvas != null && canvas.worldCamera == null && Camera.main != null)
             {
                 canvas.worldCamera = Camera.main;
             }
 
-            // 2. Ensure XRUIInputModule is configured and conflicting InputSystemUIInputModule is disabled
-            var eventSystems = UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsSortMode.None);
+            var eventSystems = Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsSortMode.None);
             foreach (var es in eventSystems)
             {
                 var inputSysUI = es.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-                if (inputSysUI != null)
-                {
-                    inputSysUI.enabled = false;
-                }
+                if (inputSysUI != null) inputSysUI.enabled = false;
 
                 var xrui = es.GetComponent<XRUIInputModule>();
-                if (xrui != null)
+                if (xrui != null && xrui.uiCamera == null && Camera.main != null)
                 {
-                    if (xrui.uiCamera == null && Camera.main != null)
-                    {
-                        xrui.uiCamera = Camera.main;
-                    }
+                    xrui.uiCamera = Camera.main;
                 }
             }
 
-            // 3. Ensure gravity and continuous movement cannot pull player into void
-            var moveProviders = UnityEngine.Object.FindObjectsByType<ContinuousMoveProvider>(FindObjectsSortMode.None);
-            foreach (var mp in moveProviders)
+            // Free-roam VR: keep InputActionManager, LocomotionMediator, and ContinuousMoveProvider enabled (both sticks walk)
+            foreach (var iam in Object.FindObjectsByType<InputActionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-#pragma warning disable CS0618
-                mp.useGravity = false;
-#pragma warning restore CS0618
-                mp.enableFly = false;
-                mp.enabled = false;
+                iam.enabled = true;
+                iam.EnableInput();
             }
 
-            // 4. Ensure light pointer line visuals stay extended
-            var curveControllers = UnityEngine.Object.FindObjectsByType<CurveVisualController>(FindObjectsSortMode.None);
+            foreach (var med in Object.FindObjectsByType<LocomotionMediator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                med.gameObject.SetActive(true);
+                med.enabled = true;
+            }
+
+            var moveProviders = Object.FindObjectsByType<ContinuousMoveProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var mp in moveProviders)
+            {
+                mp.gameObject.SetActive(true);
+                mp.enabled = true;
+                mp.enableFly = false;
+                mp.enableStrafe = true;
+                mp.inAirControlModifier = 1.0f;
+                mp.moveSpeed = m_WalkSpeed;
+                mp.leftHandMoveInput.EnableDirectActionIfModeUsed();
+                mp.rightHandMoveInput.EnableDirectActionIfModeUsed();
+            }
+
+            foreach (var tp in Object.FindObjectsByType<TeleportationProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                tp.enabled = false;
+            }
+            foreach (var st in Object.FindObjectsByType<SnapTurnProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                st.enabled = false;
+            }
+            foreach (var ct in Object.FindObjectsByType<ContinuousTurnProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                ct.enabled = false;
+            }
+
+            var curveControllers = Object.FindObjectsByType<CurveVisualController>(FindObjectsSortMode.None);
             foreach (var cvc in curveControllers)
             {
                 cvc.extendLineToEmptyHit = true;
@@ -222,26 +294,10 @@ namespace BMU.VRTour
                 cvc.lineDynamicsMode = LineDynamicsMode.Traditional;
 
                 var lr = cvc.GetComponent<LineRenderer>();
-                if (lr != null)
-                {
-                    lr.enabled = true;
-                }
+                if (lr != null) lr.enabled = true;
             }
 
-            // 5. Ensure ground floor exists at Y=0 (Physics boundary; locomotion handled via TeleportationAnchor)
-            GameObject floor = GameObject.Find("[Campus_Floor]");
-            if (floor == null)
-            {
-                floor = new GameObject("[Campus_Floor]");
-                floor.transform.position = Vector3.zero;
-                floor.layer = 0;
-                BoxCollider col = floor.AddComponent<BoxCollider>();
-                col.size = new Vector3(100f, 0.2f, 100f);
-                col.center = new Vector3(0f, -0.1f, 0f);
-            }
-
-            // 6. Ensure VRPointerReticle (small blue circle) is attached to all interactors
-            var nearFarInteractors = UnityEngine.Object.FindObjectsByType<NearFarInteractor>(FindObjectsSortMode.None);
+            var nearFarInteractors = Object.FindObjectsByType<NearFarInteractor>(FindObjectsSortMode.None);
             foreach (var nfi in nearFarInteractors)
             {
                 if (nfi.GetComponent<VRPointerReticle>() == null)
@@ -250,7 +306,6 @@ namespace BMU.VRTour
                 }
             }
 
-            // 7. Ensure VRButtonFeedback (glowing outline, hover scale & feedback) is on all UI buttons
             var buttons = GetComponentsInChildren<Button>(true);
             foreach (var btn in buttons)
             {
@@ -259,26 +314,14 @@ namespace BMU.VRTour
                     btn.gameObject.AddComponent<VRButtonFeedback>();
                 }
             }
-
-            // 8. Ensure VRUIDraggableHandle is attached to TopDragHandle
-            var dragHandleObj = GameObject.Find("TopDragHandle");
-            if (dragHandleObj != null && dragHandleObj.GetComponent<VRUIDraggableHandle>() == null)
-            {
-                dragHandleObj.AddComponent<VRUIDraggableHandle>();
-            }
-        }
-
-        private void Update()
-        {
-            HandleThumbstickInput();
         }
 
         // ====================================================================
-        // INITIALIZATION & DATA DEFINITION
+        // INITIALIZATION & EXTERIOR-ONLY CONTENT MAPPING
         // ====================================================================
         private void InitializeTourData()
         {
-            // 5-Slide Intro Carousel (matching slidewise material)
+            // 1. Main Gate 5-Slide Intro Carousel (from ui-fixes-shrey)
             m_Slides.Add(new CarouselSlideData
             {
                 badge = "HERO GROUP LEGACY",
@@ -305,10 +348,10 @@ namespace BMU.VRTour
 
             m_Slides.Add(new CarouselSlideData
             {
-                badge = "INFRASTRUCTURE & LABS",
+                badge = "INFRASTRUCTURE & CAMPUS",
                 title = "A 50-Acre Campus for Learning & Discovery",
                 description = "Designed to support academic, residential and recreational activities, BMU's campus brings together spaces for learning, research, collaboration and student interaction. Its environment encourages students to explore their interests while balancing academics with personal development and campus life.",
-                stats = new[] { "Dedicated Research & Innovation Facilities", "Residential Hostels & Student Amenities", "Sports, Recreation & Collaborative Spaces" }
+                stats = new[] { "Dedicated Academic & Innovation Complexes", "Residential Hostels & Student Amenities", "Sports, Recreation & Collaborative Plazas" }
             });
 
             m_Slides.Add(new CarouselSlideData
@@ -316,187 +359,147 @@ namespace BMU.VRTour
                 badge = "STUDENT LIFE & CULTURE",
                 title = "Vibrant Campus Life, Events & Sports",
                 description = "BMU's campus comes alive through the annual 67th Milestone festival, TEDxBMU, hackathons, and cultural events. With 24+ student clubs, outreach drives, and inter-university sports tournaments, students enjoy dynamic teamwork and vibrant campus life.",
-                stats = new[] { "24 Student-Run Clubs & Societies", "67th Milestone – 50+ Colleges Participated in 2026", "Basketball, Tennis, Volleyball & Gym Facilities" }
+                stats = new[] { "24 Student-Run Clubs & Societies", "67th Milestone – 50+ Colleges Participated in 2026", "Basketball, Tennis, Volleyball & Outdoor Grounds" }
             });
 
-            // Tour Locations (Exterior Plazas)
+            // 2. Exterior Building Locations (Hostels/ primary source + ui-fixes-shrey fallback; NO interior/room-level info)
             m_Locations["front-gate"] = new LocationData
             {
                 key = "front-gate",
                 name = "Front Gate & Main Entrance",
-                zoneTag = "CAMPUS ENTRYWAY",
+                zoneTag = "CAMPUS ENTRYWAY (EXTERIOR)",
                 heading = "BML Munjal University Front Gate",
-                summary = "The grand entrance to BMU welcomes visitors into a 50-acre sprawling, modern academic ecosystem designed for innovation, experiential learning, and holistic student development.",
-                features = new[] { "• Hero Group Foundation Arch", "• Landscaped Central Boulevard", "• 24/7 Security Command Center" },
+                summary = "The grand entrance to BMU welcomes visitors into a 50-acre modern academic campus designed for innovation, experiential learning, and holistic student life.",
+                features = new[] { "• Hero Group Foundation Arch", "• Landscaped Central Boulevard", "• 24/7 Campus Security Entryway" },
                 caption = "Front Gate & Main Academic Boulevard",
-                narration = "Standing at the front gate, visitors can sense the grandeur and energy of BMU's 50-acre campus.",
-                hasInterior = false,
-                buildingKey = "none"
+                narration = "Standing at the front gate, visitors can sense the grandeur and energy of BMU's 50-acre campus."
             };
 
             m_Locations["outside-north-block"] = new LocationData
             {
                 key = "outside-north-block",
-                name = "Outside North Block Building",
+                name = "North Block Building",
                 zoneTag = "ACADEMIC COMPLEX (EXTERIOR)",
                 heading = "North Block Academic Building",
-                summary = "The North Block is the premier academic complex for the School of Engineering & Technology and School of Management. Its modern red-brick architecture houses multi-tiered smart classrooms, computational labs, and faculty research suites.",
-                features = new[] { "• School of Engineering & Tech", "• School of Management", "• Faculty Research Suites", "• Smart Pedagogy Halls" },
+                summary = "The North Block is the premier academic complex for the School of Engineering & Technology and School of Management, anchored by its signature red-brick exterior and central plaza.",
+                features = new[] { "• School of Engineering & Technology", "• School of Management", "• Red-Brick Academic Façade", "• Central Student Plaza" },
                 caption = "North Block Red-Brick Academic Façade",
-                narration = "You are outside the North Block, the academic heartbeat of BMU housing engineering, management, and faculty cabins.",
-                hasInterior = true,
-                buildingKey = "north-block"
+                narration = "You are outside the North Block, the academic heartbeat of BMU."
             };
 
             m_Locations["outside-gateway"] = new LocationData
             {
                 key = "outside-gateway",
-                name = "Outside Gateway Building",
-                zoneTag = "ADMINISTRATIVE & STUDENT HUB",
+                name = "Gateway Building",
+                zoneTag = "ADMINISTRATIVE & STUDENT HUB (EXTERIOR)",
                 heading = "The Gateway Monumental Complex",
-                summary = "The Gateway is BMU's iconic architectural centerpiece, anchoring the university's administrative core, program offices, student reception, ACIC startup incubation center, fitness gymnasium, and conference hubs.",
-                features = new[] { "• University Reception & Dean's Office", "• ACIC Startup Incubator (NITI Aayog)", "• State-of-the-Art Fitness Center", "• Executive Meeting Hubs" },
+                summary = "The Gateway is BMU's iconic architectural centerpiece along the central boulevard, anchoring the university's administrative core, student reception, innovation hub, and campus courtyard.",
+                features = new[] { "• Iconic Monumental Central Arch", "• University Administrative Core", "• ACIC Innovation & Startup Hub", "• Landscaped Gateway Courtyard" },
                 caption = "The Monumental Gateway Central Arch & Courtyard",
-                narration = "The Gateway building stands as BMU's administrative center, housing our incubator, executive offices, and student fitness centers.",
-                hasInterior = true,
-                buildingKey = "gateway"
+                narration = "The Gateway building stands as BMU's iconic architectural and administrative centerpiece."
             };
 
             m_Locations["outside-workshop"] = new LocationData
             {
                 key = "outside-workshop",
-                name = "Outside Mechanical Workshop",
-                zoneTag = "EXPERIENTIAL INDUSTRIAL FACILITY",
-                heading = "Mechanical Workshop & Vehicle Hangar",
-                summary = "A heavy-engineering industrial facility showcasing BMU's industry alliances with Siemens and Hero MotoCorp. Houses heavy industrial machinery, 3D printing labs, and the workshop where students build Formula Student racecars and all-terrain BAJA buggies.",
-                features = new[] { "• Siemens & Hero MotoCorp Partnerships", "• Industrial CNC & Lathe Machinery", "• Additive Manufacturing 3D Printing Lab", "• Formula Student & SAE BAJA Race Bays" },
-                caption = "Heavy Machinery, 3D Printing & Motorsports Garage",
-                narration = "The Mechanical Workshop houses industrial CNCs, 3D printing equipment, and the student garage for Formula and BAJA racing vehicles.",
-                hasInterior = true,
-                buildingKey = "workshop"
+                name = "Mechanical Workshop",
+                zoneTag = "EXPERIENTIAL INDUSTRIAL FACILITY (EXTERIOR)",
+                heading = "Mechanical Workshop & Engineering Hangar",
+                summary = "A dedicated heavy-engineering building showcasing BMU's industry alliances with Siemens and Hero MotoCorp, supporting hands-on manufacturing, robotics, and student motorsports.",
+                features = new[] { "• Siemens & Hero MotoCorp Partnerships", "• Heavy Engineering Hangar Exterior", "• Formula Student & SAE BAJA Hub", "• Direct Service & Logistics Apron" },
+                caption = "Mechanical Workshop & Industrial Hangar Exterior",
+                narration = "Outside the Mechanical Workshop, where students build industrial engineering projects and student racecars."
             };
 
-            // Interior Rooms
-            m_Rooms.Add(new RoomData
+            // Primary source: Hostels/scripts.docx & Hostels/Gargi/gargi_apt.png (exterior-only scope)
+            m_Locations["outside-gargi"] = new LocationData
             {
-                key = "nb-classroom",
-                buildingKey = "north-block",
-                name = "Smart Case Study Room (NB-105)",
-                badge = "CASE-BASED LEARNING",
-                description = "A tiered case-study classroom: rows of desks rise in four tiers facing the front whiteboard and wall display, so every seat has a clear view for discussion.",
-                highlights = new[] { "• Four-Tier Desk Rows", "• Front Whiteboard & Wall Display", "• Podium for Case Presentations" },
-                narration = "This is NB-105, the smart case study room, where tiered seating gives every student a clear view for case discussions."
-            });
+                key = "outside-gargi",
+                name = "Gargi Hostel",
+                zoneTag = "GIRLS' RESIDENCE (EXTERIOR)",
+                heading = "Gargi Hostel",
+                summary = "Welcome to Gargi Hostel, a dedicated residential facility for female students at BMU. Designed with open balcony fronts, landscaped pathways, and secure controlled access, Gargi Hostel brings comfort and convenience to campus living.",
+                features = new[] { "• Dedicated Girls' Residential Complex", "• Open Balconies with Campus Views", "• Controlled Entry & 24/7 Campus Security", "• Easy Access to Dining & Academic Blocks" },
+                caption = "Gargi Hostel Exterior Facade & Courtyard",
+                narration = "Welcome to Gargi Hostel, a dedicated residential facility for female students bringing comfort and convenience to campus life."
+            };
 
-            m_Rooms.Add(new RoomData
+            // Primary source: Hostels/scripts.docx & Hostels/Maggi Point/ (exterior-only scope)
+            m_Locations["outside-food-outlets"] = new LocationData
             {
-                key = "nb-classroom-2",
-                buildingKey = "north-block",
-                name = "Standard Classroom",
-                badge = "LECTURE LEARNING",
-                description = "A standard lecture classroom with rows of desks facing the front whiteboard, used for everyday lectures, tutorials and student presentations.",
-                highlights = new[] { "• Row-Based Desk Seating", "• Front Whiteboard", "• Everyday Lectures & Tutorials" },
-                narration = "This is one of the North Block's standard classrooms, where everyday lectures and tutorials take place."
-            });
+                key = "outside-food-outlets",
+                name = "Campus Food Outlets",
+                zoneTag = "GATEWAY–NORTH BLOCK PATHWAY (EXTERIOR)",
+                heading = "Campus Food Outlets",
+                summary = "Located along the vibrant walkway between the Gateway Building and North Block, this stretch features Burger Singh, Domino's, Maggi Point, and Café Coffee Day Xpress — giving students convenient outdoor spots to grab a bite and recharge between classes.",
+                features = new[] { "• Burger Singh & Domino's Pizza", "• Maggi Point (Wraps, Maggi & Refreshments)", "• Café Coffee Day Xpress Beverage Stop", "• Gateway–North Block Social Plaza" },
+                caption = "Campus Food Outlets Along Gateway–North Block Pathway",
+                narration = "Located between the Gateway Building and North Block, this stretch of campus features Burger Singh, Domino's, Maggi Point, and Café Coffee Day Xpress."
+            };
 
-            m_Rooms.Add(new RoomData
+            // Exterior-only summaries for remaining scene trigger zones
+            m_Locations["outside-vsh"] = new LocationData
             {
-                key = "nb-lab",
-                buildingKey = "north-block",
-                name = "AR-VR Laboratory",
-                badge = "IMMERSIVE TECHNOLOGY",
-                description = "A workstation laboratory for augmented and virtual reality development, with rows of high-performance computers for student projects.",
-                highlights = new[] { "• AR / VR Development Workstations", "• Row-Based Computer Stations", "• Student Project Space" },
-                narration = "This is the AR-VR laboratory, where students build augmented and virtual reality projects on rows of high-performance workstations."
-            });
+                key = "outside-vsh",
+                name = "Vikram Sarabhai Hostel",
+                zoneTag = "STUDENT RESIDENCE (EXTERIOR)",
+                heading = "Vikram Sarabhai Hostel (VSH)",
+                summary = "Part of BMU's residential hostel sector, Vikram Sarabhai Hostel stands beside landscaped student courtyards with direct walkways connecting to the sports grounds, dining areas, and academic complexes.",
+                features = new[] { "• Residential Hostel Complex", "• Landscaped Courtyard & Walkways", "• Close to Sports & Recreation Grounds", "• 24/7 Secured Residential Zone" },
+                caption = "Vikram Sarabhai Hostel Exterior",
+                narration = "You are outside Vikram Sarabhai Hostel in BMU's residential campus sector, connected to student courtyards and sports grounds."
+            };
 
-            m_Rooms.Add(new RoomData
+            m_Locations["outside-bsh"] = new LocationData
             {
-                key = "nb-faculty",
-                buildingKey = "north-block",
-                name = "4th Floor Faculty Cabins",
-                badge = "OPEN-DOOR MENTORSHIP",
-                description = "Dedicated faculty consultation suites facilitating 1-on-1 mentorship, thesis guidance, and collaborative student-professor research.",
-                highlights = new[] { "• 1-on-1 Mentorship Suites", "• Open-Door Policy Culture", "• Research Consultation Lounges" },
-                narration = "On the 4th floor, professors maintain an accessible open-door policy, providing dedicated 1-on-1 mentorship to students."
-            });
+                key = "outside-bsh",
+                name = "Bhagat Singh Hostel",
+                zoneTag = "STUDENT RESIDENCE (EXTERIOR)",
+                heading = "Bhagat Singh Hostel (BSH)",
+                summary = "Situated in the campus residential zone, Bhagat Singh Hostel provides a vibrant student residential community with pedestrian paths linking directly to campus dining, recreation areas, and academic plazas.",
+                features = new[] { "• Multi-Wing Student Residence", "• Central Pedestrian Pathways", "• Adjacent to Campus Amenities & Dining", "• Secured Residential Campus Sector" },
+                caption = "Bhagat Singh Hostel Exterior",
+                narration = "You are outside Bhagat Singh Hostel, part of BMU's vibrant residential community with walkways linking to campus dining and plazas."
+            };
 
-            // Gateway Building: three interior spaces (GA_Lab, GA_Office, GA_Auditorium in Scene_Gateway_Interiors).
-            m_Rooms.Add(new RoomData
+            m_Locations["outside-library"] = new LocationData
             {
-                key = "gw-ai-lab",
-                buildingKey = "gateway",
-                name = "Artificial Intelligence (AI) Lab",
-                badge = "AI LAB",
-                zoneTag = "GATEWAY • INTERIOR",
-                description = "A hands-on learning and development space where students explore Artificial Intelligence, build machine learning models and experiment with real-world datasets. Equipped with NVIDIA GPU computing infrastructure, including the DGX H200 system, and dedicated cooling facilities, the lab supports deep learning, Generative AI, model training and advanced AI research.",
-                cardDescription = "GPU computing lab for machine learning, deep learning and Generative AI.",
-                highlights = new[] { "• NVIDIA DGX H200 GPU Computing", "• Dedicated Cooling System", "• Machine Learning, Deep Learning & Generative AI" },
-                narration = "This is the Artificial Intelligence lab, where students build machine learning models on NVIDIA GPU computing infrastructure."
-            });
+                key = "outside-library",
+                name = "Library & Medical Centre",
+                zoneTag = "ACADEMIC & WELLNESS HUB (EXTERIOR)",
+                heading = "Central Library & Medical Centre",
+                summary = "Positioned along the main campus corridor near the Gateway complex, this building anchors BMU's Central Library and campus Medical Centre, serving as a quiet academic and wellness landmark.",
+                features = new[] { "• Central University Library Building", "• On-Campus Medical & Wellness Centre", "• Gateway Corridor Pedestrian Plaza", "• Accessible Student Support Landmark" },
+                caption = "Central Library & Medical Centre Exterior",
+                narration = "You are outside BMU's Central Library and Medical Centre, a key academic and student wellness landmark along the Gateway corridor."
+            };
 
-            m_Rooms.Add(new RoomData
+            // Additional Hostels/ entries ready if triggers are placed for KCH or APJ (D)
+            m_Locations["outside-kch"] = new LocationData
             {
-                key = "gw-office",
-                buildingKey = "gateway",
-                name = "Program Office",
-                badge = "STUDENT SERVICES",
-                description = "The program office: a reception lobby leads into an open-plan office with workstations and glass-walled cabins for programme coordinators.",
-                highlights = new[] { "• Reception Lobby", "• Open-Plan Workstations", "• Glass-Walled Coordinator Cabins" },
-                narration = "This is the program office, where students are welcomed in the reception lobby and programme coordinators work in the open office and glass cabins."
-            });
+                key = "outside-kch",
+                name = "Kalpana Chawla Hostel",
+                zoneTag = "GIRLS' RESIDENCE (EXTERIOR)",
+                heading = "Kalpana Chawla Hostel (KCH)",
+                summary = "Kalpana Chawla Hostel is a dedicated residential facility for female students, featuring end-to-end balconies, an attached tuck shop, and a dedicated security system ensuring a safe, welcoming residential campus environment.",
+                features = new[] { "• Girls' Residential Tower", "• Balcony Spaces at Both Ends", "• Attached Campus Tuck Shop", "• Dedicated Controlled Entry Security" },
+                caption = "Kalpana Chawla Hostel Exterior Tower",
+                narration = ""
+            };
 
-            m_Rooms.Add(new RoomData
+            m_Locations["outside-apj"] = new LocationData
             {
-                key = "gw-auditorium",
-                buildingKey = "gateway",
-                name = "Auditorium",
-                badge = "EVENTS & LECTURES",
-                description = "A tiered auditorium with 360 seats, a raised stage with truss lighting and a projection screen for guest lectures, seminars and campus events.",
-                highlights = new[] { "• 360 Tiered Seats", "• Raised Stage with Truss Lighting", "• Projection Screen" },
-                narration = "This is the Gateway auditorium, with tiered seating for 360 people, a raised stage and a projection screen for lectures and events."
-            });
+                key = "outside-apj",
+                name = "APJ Abdul Kalam Hostel",
+                zoneTag = "GIRLS' RESIDENCE (EXTERIOR)",
+                heading = "APJ Abdul Kalam Hostel",
+                summary = "A dedicated girls' residential facility at BML Munjal University featuring open balconies, landscaped surroundings, and convenient access to on-site dining and everyday student amenities.",
+                features = new[] { "• Dedicated Girls' Residence", "• Open Outdoor Balconies", "• Ground-Level Dining & Mess Access", "• Safe Landscaped Residential Zone" },
+                caption = "APJ Abdul Kalam Hostel Exterior",
+                narration = ""
+            };
 
-            m_Rooms.Add(new RoomData
-            {
-                key = "ws-foyer",
-                buildingKey = "workshop",
-                name = "Manufacturing Process Lab",
-                badge = "MANUFACTURING",
-                zoneTag = "MECHANICAL LAB • INTERIOR",
-                description = "A large-scale manufacturing and machining facility where students gain hands-on experience with industrial machinery and production processes. The lab provides practical exposure to conventional machining, CNC operations, laser cutting and material processing, helping students understand how engineering designs are transformed into physical components.",
-                cardDescription = "Workshop for conventional machining, CNC operations and laser cutting.",
-                highlights = new[] { "• Lathe, Milling & CNC Machines", "• Laser Cutting & Material Processing", "• Hands-on Manufacturing Practice" },
-                narration = "This is the Manufacturing Process Lab, where students gain hands-on experience with machining, CNC operations and laser cutting."
-            });
-
-            m_Rooms.Add(new RoomData
-            {
-                key = "ws-hall",
-                buildingKey = "workshop",
-                name = "KUKA Robotics Laboratory",
-                badge = "ROBOTICS",
-                zoneTag = "MECHANICAL LAB • INTERIOR",
-                description = "A specialised facility for learning industrial robotics and automated manufacturing. Equipped with KUKA industrial robots and KRC-4 controllers, the laboratory provides hands-on training in robot operation and applications such as arc welding, spot welding and material handling, preparing students to understand robotic systems used in modern manufacturing industries.",
-                cardDescription = "Industrial robotics lab for robot programming, welding and handling.",
-                highlights = new[] { "• KUKA Industrial Robots & KRC-4 Controllers", "• Robotic Arc Welding & Spot Welding", "• Automated Material Handling" },
-                narration = "This is the KUKA Robotics Laboratory, where students train on industrial robots for welding and material handling."
-            });
-
-            m_Rooms.Add(new RoomData
-            {
-                key = "ws-mech",
-                buildingKey = "workshop",
-                name = "Mechatronics Laboratory",
-                badge = "MECHATRONICS",
-                zoneTag = "MECHANICAL LAB • INTERIOR",
-                description = "A specialised facility that brings together mechanical engineering, electronics and computer-based control to demonstrate automated production systems. Equipped with modular industrial training setups, the laboratory helps students understand how machines, sensors, actuators and programmable logic controllers work together to perform coordinated operations.",
-                cardDescription = "Modular automation setups showing how sensors, actuators and PLCs work together.",
-                highlights = new[] { "• Modular Five-Station Automation Systems", "• Sensors, Actuators & Drive Systems", "• PLC-Based Control & Industrial Automation" },
-                narration = "This is the Mechatronics Laboratory, where sensors, actuators and PLCs work together in modular automation systems."
-            });
-
-            // Bind Photographic Sprites to Carousel Slides
+            // Bind Slide Photos
             for (int i = 0; i < m_Slides.Count; i++)
             {
                 if (m_SlidePhotoSets != null && i < m_SlidePhotoSets.Length && m_SlidePhotoSets[i] != null)
@@ -506,109 +509,118 @@ namespace BMU.VRTour
                 }
             }
 
-            // Bind Photographic Sprites to Locations & Rooms
-            // KEEP IN SYNC with BMUTourSceneBuilder.LoadLocationPhotos(): same keys, same order (index-aligned).
-            string[] locKeys = new string[] {
-                "front-gate", "outside-north-block", "nb-classroom", "nb-classroom-2", "nb-lab", "nb-faculty",
-                "outside-gateway", "gw-ai-lab", "gw-office", "gw-auditorium", "outside-workshop",
-                "ws-foyer", "ws-hall", "ws-mech"
+            // Bind Exterior Location Photos (index-aligned with BMUTourSceneBuilder.LoadLocationPhotos)
+            string[] locKeys = new string[]
+            {
+                "front-gate",
+                "outside-north-block",
+                "outside-gateway",
+                "outside-workshop",
+                "outside-gargi",
+                "outside-food-outlets",
+                "outside-vsh",
+                "outside-bsh",
+                "outside-library",
+                "outside-kch",
+                "outside-apj"
             };
+
             for (int i = 0; i < locKeys.Length; i++)
             {
-                if (m_LocationCardSprites != null && i < m_LocationCardSprites.Length && m_LocationCardSprites[i] != null)
-                {
-                    if (m_Locations.TryGetValue(locKeys[i], out LocationData cardLd)) cardLd.cardPhoto = m_LocationCardSprites[i];
-                    RoomData cardRd = m_Rooms.Find(r => r.key == locKeys[i]);
-                    if (cardRd != null) cardRd.cardPhoto = m_LocationCardSprites[i];
-                }
                 if (m_LocationPhotoSprites != null && i < m_LocationPhotoSprites.Length && m_LocationPhotoSprites[i] != null)
                 {
                     if (m_Locations.TryGetValue(locKeys[i], out LocationData ld))
                     {
                         ld.photo = m_LocationPhotoSprites[i];
                     }
-                    RoomData rd = m_Rooms.Find(r => r.key == locKeys[i]);
-                    if (rd != null)
-                    {
-                        rd.photo = m_LocationPhotoSprites[i];
-                    }
                 }
+            }
+
+            if (m_Locations.TryGetValue("outside-food-outlets", out LocationData foodData) && m_FoodOutletGallerySprites != null)
+            {
+                foodData.galleryPhotos = m_FoodOutletGallerySprites;
             }
         }
 
         private void WireButtonListeners()
         {
-            if (m_BtnResetTour != null) m_BtnResetTour.onClick.AddListener(StartTourFromBeginning);
-            if (m_BtnRecenterUI != null)
-            {
-                m_BtnRecenterUI.onClick.AddListener(() =>
-                {
-                    if (m_LazyFollowUI == null) m_LazyFollowUI = GetComponent<LazyFollowUI>();
-                    if (m_LazyFollowUI != null) m_LazyFollowUI.RecenterToCurrentGaze();
-                });
-            }
-
-            // Intro Carousel buttons
             if (m_BtnPrevSlide != null) m_BtnPrevSlide.onClick.AddListener(PreviousSlide);
             if (m_BtnNextSlide != null) m_BtnNextSlide.onClick.AddListener(NextSlide);
-            if (m_BtnSkipIntro != null) m_BtnSkipIntro.onClick.AddListener(() =>
-            {
-                if (TourAudioNarrator.Instance != null) TourAudioNarrator.Instance.StopNarration();
-                OpenCampusHub();
-            });
-
-            // Campus Hub destination buttons
-            if (m_BtnSelectNorthBlock != null) m_BtnSelectNorthBlock.onClick.AddListener(() => TeleportToLocation("outside-north-block"));
-            if (m_BtnSelectGateway != null) m_BtnSelectGateway.onClick.AddListener(() => TeleportToLocation("outside-gateway"));
-            if (m_BtnSelectWorkshop != null) m_BtnSelectWorkshop.onClick.AddListener(() => TeleportToLocation("outside-workshop"));
-
-            // Location Info buttons
-            if (m_BtnExploreInterior != null) m_BtnExploreInterior.onClick.AddListener(OnExploreInteriorClicked);
-            if (m_BtnNextLocation != null) m_BtnNextLocation.onClick.AddListener(NavigateToNextBuilding);
-            if (m_BtnCampusHubReturn != null) m_BtnCampusHubReturn.onClick.AddListener(OpenCampusHub);
-            if (m_BtnMinimize != null && m_DockOrb != null) m_BtnMinimize.onClick.AddListener(m_DockOrb.MinimizeToDock);
-
-            // Internal Hub buttons
-            if (m_BtnBackToPlaza != null) m_BtnBackToPlaza.onClick.AddListener(() => TeleportToLocation(m_CurrentBuildingContext));
-            if (m_BtnBackToCampusHub != null) m_BtnBackToCampusHub.onClick.AddListener(OpenCampusHub);
-            if (m_BtnRestoreOrb != null && m_DockOrb != null) m_BtnRestoreOrb.onClick.AddListener(m_DockOrb.RestoreFromDock);
+            if (m_BtnSkipIntro != null) m_BtnSkipIntro.onClick.AddListener(() => HideAllPanels());
         }
 
         // ====================================================================
-        // STAGE 1: INTRO 3D CAROUSEL
+        // TRIGGER ZONE PUBLIC API
         // ====================================================================
-        public void StartTourFromBeginning()
+        public void ShowMainGateIntro()
         {
-            if (TourAudioNarrator.Instance != null) TourAudioNarrator.Instance.StopNarration();
+            StopGalleryCycle();
+            m_CurrentActiveZoneKey = "main-gate";
             m_CurrentSlideIndex = 0;
-            m_CurrentLocationKey = "front-gate";
 
-            Action onEntered = () =>
+            ActivateStage(m_IntroCarouselPanel);
+            RecenterUI();
+            UpdateCarouselDisplay();
+        }
+
+        public void ShowExteriorZone(string locKey)
+        {
+            if (!m_Locations.TryGetValue(locKey, out LocationData data))
             {
-                ActivateStage(m_IntroCarouselPanel);
-                UpdateHeaderLocation("FRONT GATE • WELCOME & INTRO");
-                UpdateCarouselDisplay();
-
-                if (CampusEnvironmentManager.Instance != null)
-                {
-                    CampusEnvironmentManager.Instance.SwitchToZone("front-gate");
-                }
-            };
-
-            if (SceneTransitionManager.Instance != null)
-            {
-                SceneTransitionManager.Instance.TransitionToExterior("front-gate", onEntered);
+                Debug.LogWarning($"[CampusTourManager] Unknown exterior location key: '{locKey}'");
+                return;
             }
-            else if (ScreenFade.Instance != null)
+
+            StopGalleryCycle();
+            m_CurrentActiveZoneKey = locKey;
+
+            ActivateStage(m_LocationInfoPanel);
+            RecenterUI();
+
+            if (m_LocZoneTag != null) m_LocZoneTag.text = data.zoneTag;
+            if (m_LocHeading != null) m_LocHeading.text = data.heading;
+            if (m_LocSummary != null) m_LocSummary.text = data.summary;
+            if (m_LocFeaturesList != null && data.features != null)
             {
-                ScreenFade.Instance.FadeOutAndIn(onEntered);
+                m_LocFeaturesList.text = string.Join("\n", data.features);
             }
-            else
+            if (m_LocPhotoCaption != null) m_LocPhotoCaption.text = data.caption;
+
+            if (m_LocPhotoCardImage != null && data.photo != null)
             {
-                onEntered();
+                m_LocPhotoCardImage.sprite = data.photo;
+                m_LocPhotoCardImage.preserveAspect = true;
+                m_LocPhotoCardImage.color = Color.white;
+            }
+
+            if (data.galleryPhotos != null && data.galleryPhotos.Length > 1)
+            {
+                m_GalleryCycleRoutine = StartCoroutine(CycleGalleryPhotosRoutine(data.galleryPhotos));
+            }
+
+            PlayVoice(m_LocationInfoPanel, locKey, data.narration);
+        }
+
+        public void HideAllPanels(string expectedKey = null)
+        {
+            if (!string.IsNullOrEmpty(expectedKey) && m_CurrentActiveZoneKey != expectedKey)
+            {
+                return;
+            }
+
+            StopGalleryCycle();
+            m_CurrentActiveZoneKey = "";
+            ActivateStage(null);
+
+            if (TourAudioNarrator.Instance != null)
+            {
+                TourAudioNarrator.Instance.StopNarration();
             }
         }
 
+        // ====================================================================
+        // MAIN GATE CAROUSEL NAVIGATION
+        // ====================================================================
         public void NextSlide()
         {
             if (m_CurrentSlideIndex < m_Slides.Count - 1)
@@ -618,7 +630,7 @@ namespace BMU.VRTour
             }
             else
             {
-                OpenCampusHub();
+                HideAllPanels();
             }
         }
 
@@ -631,36 +643,6 @@ namespace BMU.VRTour
             }
         }
 
-        // Looks the state's clip up on the panel's PanelVoiceover and hands it to the narrator, which is the
-        // only place audio is triggered from. No entry / no clip stops whatever was playing.
-        private void PlayVoice(GameObject panel, string key, string caption)
-        {
-            if (TourAudioNarrator.Instance == null) return;
-            AudioClip clip = null;
-            float delay = 0.3f;
-            PanelVoiceover pv = panel != null ? panel.GetComponent<PanelVoiceover>() : null;
-            if (pv != null) pv.TryGet(key, out clip, out delay);
-            TourAudioNarrator.Instance.PlayNarration(caption, clip, delay);
-        }
-
-        private static string HubVoiceKey(string buildingKey) => "hub-" + buildingKey;
-
-        // "Switch Room" in a workshop room cycles ws-foyer -> ws-hall -> ws-mech; other buildings still open their hub.
-        private void OnExploreInteriorClicked()
-        {
-            if (m_CurrentLocationKey != null && m_CurrentLocationKey.StartsWith("ws-"))
-            {
-                List<RoomData> rooms = m_Rooms.FindAll(r => r.buildingKey == "workshop");
-                int idx = rooms.FindIndex(r => r.key == m_CurrentLocationKey);
-                if (rooms.Count > 1 && idx >= 0)
-                {
-                    TeleportToLocation(rooms[(idx + 1) % rooms.Count].key);
-                    return;
-                }
-            }
-            OpenInteriorHubForCurrentBuilding();
-        }
-
         private void UpdateCarouselDisplay()
         {
             if (m_Slides == null || m_Slides.Count == 0) return;
@@ -670,7 +652,7 @@ namespace BMU.VRTour
             if (m_SlideBadgeText != null)
             {
                 m_SlideBadgeText.text = slide.badge;
-                m_SlideBadgeText.color = new Color(0.01f, 0.52f, 0.78f); // Theme sky blue
+                m_SlideBadgeText.color = new Color(0.01f, 0.52f, 0.78f);
             }
             if (m_SlideTitleText != null) m_SlideTitleText.text = slide.title;
             if (m_SlideDescText != null) m_SlideDescText.text = slide.description;
@@ -679,34 +661,26 @@ namespace BMU.VRTour
             {
                 for (int i = 0; i < m_SlidePointerTexts.Length; i++)
                 {
-                    if (m_SlidePointerTexts[i] != null)
+                    if (m_SlidePointerTexts[i] == null) continue;
+                    if (i < slide.stats.Length && !string.IsNullOrEmpty(slide.stats[i]))
                     {
-                        if (i < slide.stats.Length && !string.IsNullOrEmpty(slide.stats[i]))
-                        {
-                            var parentObj = m_SlidePointerTexts[i].transform.parent.gameObject;
-                            parentObj.SetActive(true);
-                            m_SlidePointerTexts[i].text = slide.stats[i].TrimStart('•', ' ', '-');
+                        var parentObj = m_SlidePointerTexts[i].transform.parent.gameObject;
+                        parentObj.SetActive(true);
+                        m_SlidePointerTexts[i].text = slide.stats[i].TrimStart('•', ' ', '-');
 
-                            var tagRt = parentObj.GetComponent<RectTransform>();
-                            if (tagRt != null)
-                            {
-                                tagRt.pivot = new Vector2(0f, 0.5f);
-                            }
-                        }
-                        else
-                        {
-                            m_SlidePointerTexts[i].transform.parent.gameObject.SetActive(false);
-                        }
+                        var tagRt = parentObj.GetComponent<RectTransform>();
+                        if (tagRt != null) tagRt.pivot = new Vector2(0f, 0.5f);
+                    }
+                    else
+                    {
+                        m_SlidePointerTexts[i].transform.parent.gameObject.SetActive(false);
                     }
                 }
 
                 if (m_SlidePointerTexts[0] != null && m_SlidePointerTexts[0].transform.parent != null)
                 {
                     var containerRt = m_SlidePointerTexts[0].transform.parent.parent as RectTransform;
-                    if (containerRt != null)
-                    {
-                        LayoutRebuilder.ForceRebuildLayoutImmediate(containerRt);
-                    }
+                    if (containerRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(containerRt);
                 }
             }
             else if (m_SlideStatsText != null && slide.stats != null)
@@ -719,7 +693,6 @@ namespace BMU.VRTour
                 m_SlideIndexIndicator.text = $"SLIDE {m_CurrentSlideIndex + 1} OF {m_Slides.Count}";
             }
 
-            // Update Dynamic Polaroid Images and Captions
             if (m_PolaroidImages != null && slide.photos != null)
             {
                 for (int i = 0; i < m_PolaroidImages.Length; i++)
@@ -731,6 +704,7 @@ namespace BMU.VRTour
                     }
                 }
             }
+
             if (m_PolaroidCaptions != null && slide.photoLabels != null)
             {
                 for (int i = 0; i < m_PolaroidCaptions.Length; i++)
@@ -744,213 +718,63 @@ namespace BMU.VRTour
         }
 
         // ====================================================================
-        // STAGE 2: CAMPUS EXPLORATION HUB
+        // HELPERS
         // ====================================================================
-        public void OpenCampusHub()
+        private void ActivateStage(GameObject activePanel)
         {
-            Action showHubAction = () =>
-            {
-                ActivateStage(m_CampusHubPanel);
-                UpdateHeaderLocation("CAMPUS EXPLORATION HUB • CHOOSE DESTINATION");
+            if (m_IntroCarouselPanel != null) m_IntroCarouselPanel.SetActive(m_IntroCarouselPanel == activePanel);
+            if (m_LocationInfoPanel != null) m_LocationInfoPanel.SetActive(m_LocationInfoPanel == activePanel);
+        }
 
-                PlayVoice(m_CampusHubPanel, "campus-hub", "Welcome to the Campus Exploration Hub. Choose one of our three primary university complexes to begin your tour.");
-            };
+        private void RecenterUI()
+        {
+            if (m_LazyFollowUI == null) m_LazyFollowUI = GetComponent<LazyFollowUI>();
+            if (m_LazyFollowUI != null) m_LazyFollowUI.RecenterToCurrentGaze();
+        }
 
-            // If indoors, return to exterior front gate per architecture plan
-            bool isIndoors = IsRoomKey(m_CurrentLocationKey);
-            if (SceneTransitionManager.Instance != null && isIndoors)
+        private void PlayVoice(GameObject panel, string key, string caption)
+        {
+            if (TourAudioNarrator.Instance == null) return;
+            AudioClip clip = null;
+            float delay = 0.3f;
+            PanelVoiceover pv = panel != null ? panel.GetComponent<PanelVoiceover>() : null;
+            if (pv != null) pv.TryGet(key, out clip, out delay);
+            TourAudioNarrator.Instance.PlayNarration(caption, clip, delay);
+        }
+
+        private void StopGalleryCycle()
+        {
+            if (m_GalleryCycleRoutine != null)
             {
-                SceneTransitionManager.Instance.TransitionToExterior("front-gate", showHubAction);
-            }
-            else if (ScreenFade.Instance != null)
-            {
-                ScreenFade.Instance.FadeOutAndIn(showHubAction);
-            }
-            else
-            {
-                showHubAction();
+                StopCoroutine(m_GalleryCycleRoutine);
+                m_GalleryCycleRoutine = null;
             }
         }
 
-        // ====================================================================
-        // STAGE 3: LOCATION EXTERIOR PLAZAS & INTERIORS
-        // ====================================================================
-        // Room keys carry their building in the prefix: nb- (North Block), gw- (Gateway), ws- (Workshop).
-        private static bool IsRoomKey(string key)
+        private IEnumerator CycleGalleryPhotosRoutine(Sprite[] photos)
         {
-            return key.StartsWith("nb-") || key.StartsWith("gw-") || key.StartsWith("ws-");
-        }
-
-        private static string BuildingKeyForRoom(string roomKey)
-        {
-            if (roomKey.StartsWith("gw-")) return "gateway";
-            if (roomKey.StartsWith("ws-")) return "workshop";
-            return "north-block";
-        }
-
-        public void TeleportToLocation(string locKey)
-        {
-            m_CurrentLocationKey = locKey;
-            if (locKey.StartsWith("outside-"))
+            var valid = new List<Sprite>();
+            foreach (var s in photos)
             {
-                m_CurrentBuildingContext = locKey;
+                if (s != null) valid.Add(s);
             }
+            if (valid.Count <= 1 || m_LocPhotoCardImage == null) yield break;
 
-            Action onArrived = () =>
+            int idx = 0;
+            while (true)
             {
-                ShowLocationPanel(locKey);
-                if (CampusEnvironmentManager.Instance != null)
+                yield return new WaitForSeconds(4.0f);
+                idx = (idx + 1) % valid.Count;
+                if (m_LocPhotoCardImage != null)
                 {
-                    CampusEnvironmentManager.Instance.SwitchToZone(locKey);
-                }
-            };
-
-            if (SceneTransitionManager.Instance != null)
-            {
-                if (IsRoomKey(locKey))
-                {
-                    SceneTransitionManager.Instance.TransitionToInterior(BuildingKeyForRoom(locKey), locKey, onArrived);
-                }
-                else
-                {
-                    SceneTransitionManager.Instance.TransitionToExterior(locKey, onArrived);
+                    m_LocPhotoCardImage.sprite = valid[idx];
+                    m_LocPhotoCardImage.preserveAspect = true;
+                    m_LocPhotoCardImage.color = Color.white;
                 }
             }
-            else if (ScreenFade.Instance != null)
-            {
-                ScreenFade.Instance.FadeOutAndIn(onArrived);
-            }
-            else
-            {
-                onArrived();
-            }
         }
 
-        private void ShowLocationPanel(string locKey)
-        {
-            if (!m_Locations.TryGetValue(locKey, out LocationData data))
-            {
-                // Fallback if entering a room directly
-                RoomData room = m_Rooms.Find(r => r.key == locKey);
-                if (room != null)
-                {
-                    ShowRoomInfo(room);
-                    return;
-                }
-                return;
-            }
-
-            ActivateStage(m_LocationInfoPanel);
-            UpdateHeaderLocation(data.name.ToUpperInvariant());
-
-            if (m_LocZoneTag != null) m_LocZoneTag.text = data.zoneTag;
-            if (m_LocHeading != null) m_LocHeading.text = data.heading;
-            if (m_LocSummary != null) m_LocSummary.text = data.summary;
-
-            if (m_LocFeaturesList != null && data.features != null)
-            {
-                m_LocFeaturesList.text = string.Join("\n", data.features);
-            }
-
-            if (m_LocPhotoCaption != null) m_LocPhotoCaption.text = data.caption;
-
-            if (m_LocPhotoCardImage != null && data.photo != null)
-            {
-                m_LocPhotoCardImage.sprite = data.photo;
-                m_LocPhotoCardImage.preserveAspect = true;
-                m_LocPhotoCardImage.color = Color.white;
-            }
-
-            // Configure action buttons
-            if (m_BtnExploreInterior != null)
-            {
-                m_BtnExploreInterior.gameObject.SetActive(data.hasInterior);
-                TextMeshProUGUI btnText = m_BtnExploreInterior.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "ENTER";
-            }
-
-            PlayVoice(m_LocationInfoPanel, locKey, data.narration);
-        }
-
-        private void ShowRoomInfo(RoomData room)
-        {
-            ActivateStage(m_LocationInfoPanel);
-            UpdateHeaderLocation($"{room.name.ToUpperInvariant()} • INTERIOR");
-
-            if (m_LocZoneTag != null) m_LocZoneTag.text = string.IsNullOrEmpty(room.zoneTag) ? $"{room.badge} • 360° INTERIOR" : room.zoneTag;
-            if (m_LocHeading != null) m_LocHeading.text = room.name;
-            if (m_LocSummary != null) m_LocSummary.text = room.description;
-
-            if (m_LocFeaturesList != null && room.highlights != null)
-            {
-                m_LocFeaturesList.text = string.Join("\n", room.highlights);
-            }
-
-            if (m_LocPhotoCaption != null) m_LocPhotoCaption.text = $"{room.name} 360 View";
-
-            if (m_LocPhotoCardImage != null && room.photo != null)
-            {
-                m_LocPhotoCardImage.sprite = room.photo;
-                m_LocPhotoCardImage.preserveAspect = true;
-                m_LocPhotoCardImage.color = Color.white;
-            }
-
-            if (m_BtnExploreInterior != null)
-            {
-                m_BtnExploreInterior.gameObject.SetActive(true);
-                TextMeshProUGUI btnText = m_BtnExploreInterior.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "Switch Room";
-            }
-
-            PlayVoice(m_LocationInfoPanel, room.key, room.narration);
-        }
-
-        private void NavigateToNextBuilding()
-        {
-            if (m_CurrentBuildingContext == "outside-north-block")
-            {
-                TeleportToLocation("outside-gateway");
-            }
-            else if (m_CurrentBuildingContext == "outside-gateway")
-            {
-                TeleportToLocation("outside-workshop");
-            }
-            else
-            {
-                TeleportToLocation("outside-north-block");
-            }
-        }
-
-        // ====================================================================
-        // STAGE 4: INTERNAL BUILDING HUB
-        // ====================================================================
-        public void OpenInteriorHubForCurrentBuilding()
-        {
-            string building = m_CurrentBuildingContext == "outside-gateway" ? "gateway"
-                : m_CurrentBuildingContext == "outside-workshop" ? "workshop" : "north-block";
-
-            ActivateStage(m_InternalBuildingHubPanel);
-
-            string hubTitle = building == "gateway" ? "GATEWAY BUILDING • INTERIOR SPACES"
-                : building == "workshop" ? "MECHANICAL WORKSHOP • INTERIOR SPACES" : "NORTH BLOCK • INTERIOR SPACES";
-            UpdateHeaderLocation(hubTitle);
-
-            if (m_InternalHubTag != null) m_InternalHubTag.gameObject.SetActive(false);
-            if (m_InternalHubTitle != null) m_InternalHubTitle.text = "Select a Facility";
-
-            PopulateRoomCards(building);
-
-            if (m_InternalHubFooter != null)
-            {
-                bool showFooter = building == "workshop";
-                m_InternalHubFooter.gameObject.SetActive(showFooter);
-                if (showFooter) m_InternalHubFooter.text = $"{m_Rooms.FindAll(r => r.buildingKey == building).Count} Internal Spaces";
-            }
-
-            PlayVoice(m_InternalBuildingHubPanel, HubVoiceKey(building), "Select any of our academic facilities or research laboratories to step inside.");
-        }
-
-        /// <summary>Assigns a sprite to an Image inside a masked container and fill-crops it (no stretching, no letterbox).</summary>
+        /// <summary>Assigns a sprite to an Image inside a masked container and fill-crops it.</summary>
         public static void ApplyFillCropSprite(Image img, Sprite sprite)
         {
             img.sprite = sprite;
@@ -960,231 +784,6 @@ namespace BMU.VRTour
             if (fitter == null) fitter = img.gameObject.AddComponent<AspectRatioFitter>();
             fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
             fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
-        }
-
-        private void PopulateRoomCards(string buildingKey)
-        {
-            if (m_RoomCardsContainer == null || m_RoomCardTemplate == null) return;
-
-            // Clear previous cards except template. Deactivate first: Destroy is deferred to end of
-            // frame, and the layout group would otherwise still lay out the old cards this frame.
-            foreach (Transform child in m_RoomCardsContainer)
-            {
-                if (child.gameObject != m_RoomCardTemplate)
-                {
-                    child.gameObject.SetActive(false);
-                    Destroy(child.gameObject);
-                }
-            }
-
-            m_RoomCardTemplate.SetActive(false);
-
-            List<RoomData> matchingRooms = m_Rooms.FindAll(r => r.buildingKey == buildingKey);
-            foreach (RoomData room in matchingRooms)
-            {
-                GameObject cardObj = Instantiate(m_RoomCardTemplate, m_RoomCardsContainer);
-                cardObj.SetActive(true);
-
-                // Look texts up by name: hierarchy order puts the badge first, so index-based
-                // assignment used to put the room name inside the small badge pill.
-                SetDescendantText(cardObj.transform, "Title", room.name);
-                SetDescendantText(cardObj.transform, "Badge", room.badge);
-                SetDescendantText(cardObj.transform, "Description", string.IsNullOrEmpty(room.cardDescription) ? room.description : room.cardDescription);
-                Transform actionPill = cardObj.transform.Find("ActionPill");
-                if (actionPill != null) actionPill.gameObject.SetActive(false);
-
-                // Ensure center alignment and Truncate overflow
-                TextMeshProUGUI titleTmp = cardObj.transform.Find("TextStack/Title")?.GetComponent<TextMeshProUGUI>();
-                if (titleTmp != null) titleTmp.alignment = TextAlignmentOptions.Center;
-                TextMeshProUGUI descTmp = cardObj.transform.Find("TextStack/Description")?.GetComponent<TextMeshProUGUI>();
-                if (descTmp != null)
-                {
-                    descTmp.alignment = TextAlignmentOptions.Center;
-                    descTmp.overflowMode = TextOverflowModes.Truncate;
-                }
-
-                // Bind matching interior photo
-                Transform photoTr = cardObj.transform.Find("PhotoContainer/CardPhoto") ?? cardObj.transform.Find("CardPhoto");
-                if (photoTr != null)
-                {
-                    Image photoImg = photoTr.GetComponent<Image>();
-                    Sprite cardSprite = room.cardPhoto != null ? room.cardPhoto : room.photo;
-                    if (photoImg != null && cardSprite != null)
-                    {
-                        ApplyFillCropSprite(photoImg, cardSprite);
-                    }
-                }
-
-                // Category color badge chip styling
-                Transform badgePillTr = cardObj.transform.Find("BadgePill");
-                if (badgePillTr != null)
-                {
-                    Image badgeImg = badgePillTr.GetComponent<Image>();
-                    if (badgeImg != null)
-                    {
-                        if (buildingKey == "north-block")
-                            badgeImg.color = new Color(0f, 0.17f, 0.29f); // #002B49 BMU Navy
-                        else if (buildingKey == "gateway")
-                            badgeImg.color = new Color(0.01f, 0.52f, 0.78f); // #0284C7 Natural Sky Blue
-                        else
-                            badgeImg.color = new Color(0.89f, 0.11f, 0.14f); // #E31B23 BMU Crimson
-                    }
-
-                    TextMeshProUGUI bTmp = badgePillTr.GetComponentInChildren<TextMeshProUGUI>();
-                    if (bTmp != null)
-                    {
-                        bTmp.text = room.badge;
-                        RectTransform bpRt = badgePillTr.GetComponent<RectTransform>();
-                        if (bpRt != null)
-                        {
-                            bpRt.sizeDelta = new Vector2(bTmp.preferredWidth + 24f, bpRt.sizeDelta.y);
-                        }
-                    }
-                }
-
-                Button btn = cardObj.GetComponent<Button>() ?? cardObj.GetComponentInChildren<Button>();
-                if (btn != null)
-                {
-                    string rKey = room.key;
-                    btn.onClick.AddListener(() => TeleportToLocation(rKey));
-                }
-
-                // Re-initialize VRButtonFeedback resting position after layout
-                VRButtonFeedback fb = cardObj.GetComponent<VRButtonFeedback>();
-                if (fb != null)
-                {
-                    fb.InitializeRestingPosition();
-                }
-            }
-        }
-
-        // ====================================================================
-        // THUMBSTICK CONTROLS (CAROUSEL & NAVIGATION)
-        // ====================================================================
-        private void HandleThumbstickInput()
-        {
-            if (Time.time - m_LastThumbstickTime < m_ThumbstickCooldown) return;
-
-            float horizontal = 0f;
-            float vertical = 0f;
-
-            // 1. Read from XR Input Devices (Meta Quest 3S controllers)
-            var leftHandDevices = new List<UnityEngine.XR.InputDevice>();
-            UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(
-                InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Left | InputDeviceCharacteristics.Controller,
-                leftHandDevices);
-
-            var rightHandDevices = new List<UnityEngine.XR.InputDevice>();
-            UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(
-                InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller,
-                rightHandDevices);
-
-            foreach (var dev in leftHandDevices)
-            {
-                if (dev.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out Vector2 axis) && axis.sqrMagnitude > 0.04f)
-                {
-                    horizontal = axis.x;
-                    vertical = axis.y;
-                    break;
-                }
-            }
-
-            if (Mathf.Abs(horizontal) < 0.1f && Mathf.Abs(vertical) < 0.1f)
-            {
-                foreach (var dev in rightHandDevices)
-                {
-                    if (dev.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out Vector2 axis) && axis.sqrMagnitude > 0.04f)
-                    {
-                        horizontal = axis.x;
-                        vertical = axis.y;
-                        break;
-                    }
-                }
-            }
-
-            // 2. Fallback to Gamepad (if present)
-            if (Mathf.Abs(horizontal) < 0.1f && Mathf.Abs(vertical) < 0.1f)
-            {
-                if (Gamepad.current != null)
-                {
-                    Vector2 pad = Gamepad.current.leftStick.ReadValue();
-                    if (pad.sqrMagnitude < 0.04f) pad = Gamepad.current.dpad.ReadValue();
-                    if (pad.sqrMagnitude > 0.04f)
-                    {
-                        horizontal = pad.x;
-                        vertical = pad.y;
-                    }
-                }
-            }
-
-            // 3. Fallback to Keyboard for Editor simulation
-            if (Mathf.Abs(horizontal) < 0.1f && Mathf.Abs(vertical) < 0.1f)
-            {
-                if (Keyboard.current != null)
-                {
-                    var kb = Keyboard.current;
-                    if (kb.leftArrowKey.isPressed || kb.aKey.isPressed) horizontal = -1f;
-                    else if (kb.rightArrowKey.isPressed || kb.dKey.isPressed) horizontal = 1f;
-
-                    if (kb.downArrowKey.isPressed || kb.sKey.isPressed) vertical = -1f;
-                    else if (kb.upArrowKey.isPressed || kb.wKey.isPressed) vertical = 1f;
-                }
-            }
-
-            if (Mathf.Abs(horizontal) > m_ThumbstickThreshold)
-            {
-                m_LastThumbstickTime = Time.time;
-                if (m_IntroCarouselPanel != null && m_IntroCarouselPanel.activeSelf)
-                {
-                    if (horizontal > 0) NextSlide();
-                    else PreviousSlide();
-                }
-                else if (m_LocationInfoPanel != null && m_LocationInfoPanel.activeSelf)
-                {
-                    if (horizontal > 0) NavigateToNextBuilding();
-                }
-            }
-
-            if (vertical < -m_ThumbstickThreshold)
-            {
-                // Flick down on thumbstick to toggle minimize dock orb
-                m_LastThumbstickTime = Time.time;
-                if (m_DockOrb != null)
-                {
-                    m_DockOrb.ToggleDockState();
-                }
-            }
-        }
-
-        // ====================================================================
-        // HELPER UTILITIES
-        // ====================================================================
-        private void ActivateStage(GameObject activePanel)
-        {
-            if (m_IntroCarouselPanel != null) m_IntroCarouselPanel.SetActive(m_IntroCarouselPanel == activePanel);
-            if (m_CampusHubPanel != null) m_CampusHubPanel.SetActive(m_CampusHubPanel == activePanel);
-            if (m_LocationInfoPanel != null) m_LocationInfoPanel.SetActive(m_LocationInfoPanel == activePanel);
-            if (m_InternalBuildingHubPanel != null) m_InternalBuildingHubPanel.SetActive(m_InternalBuildingHubPanel == activePanel);
-        }
-
-        private static void SetDescendantText(Transform root, string childName, string value)
-        {
-            foreach (TextMeshProUGUI tmp in root.GetComponentsInChildren<TextMeshProUGUI>(true))
-            {
-                if (tmp.name == childName)
-                {
-                    tmp.text = value;
-                    return;
-                }
-            }
-        }
-
-        private void UpdateHeaderLocation(string locText)
-        {
-            if (m_HeaderLocationText != null)
-            {
-                m_HeaderLocationText.text = locText;
-            }
         }
     }
 }

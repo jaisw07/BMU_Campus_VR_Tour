@@ -13,6 +13,7 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 namespace BMU.VRTour.Editor
@@ -109,27 +110,50 @@ namespace BMU.VRTour.Editor
         private static Sprite s_PhotoSlide1_Quad;
         private static Sprite s_PhotoSlide1_Skyline;
 
-        [MenuItem("BMU VR Tour/Build Complete VR Tour Scene (All 4 Scenes)", false, 1)]
+        [MenuItem("BMU VR Tour/Build Complete VR Tour Scene (Single Exterior Scene)", false, 1)]
         public static void BuildCompleteScene()
         {
-            BuildAllScenes();
+            ExteriorTourFinalizer.FinalizeExteriorScene();
         }
 
-        [MenuItem("BMU VR Tour/Build Multi-Scene Architecture", false, 2)]
-        public static void BuildAllScenes()
+        public static void InstallSingleSceneTourIntoActiveScene()
         {
-            Debug.Log("[BMU VR Tour] Starting automated multi-scene construction...");
             LoadAssets();
-            XRSetupInitializer.EnsureXRConfigured();
+            CleanUpOldObjects();
 
-            BuildMasterTourCoreScene();
-            BuildExteriorScene();
-            BuildNorthBlockInteriorsScene();
-            BuildGatewayInteriorsScene();
+            GameObject xrRig = SetupXRRig(out Camera mainCam);
+
+            // Place XR Rig at the Main Gate entrance road looking into the campus (-X),
+            // moving Anchor_FrontGate there too so OutOfBoundsSafetyTrigger recovers to the Main Gate.
+            Vector3 mainGateSpawn = new Vector3(64f, 0.55f, -2f);
+            GameObject mainGatePopup = GameObject.Find("UI_popup_Main_Gate") ?? GameObject.Find("UI popup Main Gate");
+            if (mainGatePopup != null)
+            {
+                // Stand on the main entrance road clearly facing the Main Gate popup hologram
+                mainGateSpawn = new Vector3(mainGatePopup.transform.position.x + 6f, mainGatePopup.transform.position.y + 0.1f, -2f);
+            }
+            if (Physics.Raycast(new Vector3(mainGateSpawn.x, mainGateSpawn.y + 15f, mainGateSpawn.z), Vector3.down, out RaycastHit hit, 40f))
+            {
+                mainGateSpawn.y = hit.point.y + 0.05f;
+            }
+
+            GameObject frontGateAnchor = GameObject.Find("Anchor_FrontGate");
+            if (frontGateAnchor != null)
+            {
+                frontGateAnchor.transform.position = mainGateSpawn;
+                frontGateAnchor.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+                EditorUtility.SetDirty(frontGateAnchor);
+            }
+
+            xrRig.transform.position = mainGateSpawn;
+            xrRig.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+
+            SetupScreenFade();
+            SetupSpatialUI(mainCam);
             UpdateBuildSettings();
 
-            EditorSceneManager.OpenScene("Assets/Scenes/Master_Tour_Core.unity", OpenSceneMode.Single);
-            Debug.Log("[BMU VR Tour] Multi-Scene VR architecture completely built and configured!");
+            EditorUtility.SetDirty(xrRig);
+            Debug.Log("[BMU VR Tour] Installed Single-Scene VR Rig + Simplified Spatial UI into Scene_Campus_Exterior.");
         }
 
         private static void CleanUpOldObjects()
@@ -142,9 +166,9 @@ namespace BMU.VRTour.Editor
                 if (obj == null) continue;
                 if (obj.name.StartsWith("XR Origin") ||
                     obj.name == "[Campus_Floor]" ||
-                    obj.name == "[Campus_Environment]" ||
                     obj.name == "[VR_Spatial_UI_Root]" ||
                     obj.name == "[ScreenFade_Root]" ||
+                    obj.name == "[Tour_Scene_Controller]" ||
                     obj.name == "EventSystem" ||
                     obj.name == "Main Camera")
                 {
@@ -211,12 +235,24 @@ namespace BMU.VRTour.Editor
             if (mainCam != null)
             {
                 mainCam.nearClipPlane = 0.1f;
-                mainCam.farClipPlane = 300f;
+                mainCam.farClipPlane = 1000f;
                 var xrOriginComp = rigInstance.GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
                 if (xrOriginComp != null)
                 {
                     xrOriginComp.Camera = mainCam;
                 }
+            }
+
+            // Ensure CharacterController exists on the XR Origin for building/world wall collision
+            CharacterController cc = rigInstance.GetComponentInChildren<CharacterController>(true);
+            if (cc == null)
+            {
+                cc = rigInstance.AddComponent<CharacterController>();
+                cc.radius = 0.35f;
+                cc.height = 1.75f;
+                cc.center = new Vector3(0f, 0.875f, 0f);
+                cc.stepOffset = 0.4f;
+                cc.slopeLimit = 45f;
             }
 
             // 1. Configure all CurveVisualControllers for full visible light pointers
@@ -245,36 +281,67 @@ namespace BMU.VRTour.Editor
                 }
             }
 
-            // 2. Prevent falling into void: Disable Continuous Move & Gravity
+            // 2. Free-Roam Both-Stick Walking: Enable Continuous Move + Gravity, disable Turn & Teleportation
             var moveProviders = rigInstance.GetComponentsInChildren<ContinuousMoveProvider>(true);
             foreach (var mp in moveProviders)
             {
 #pragma warning disable CS0618
-                mp.useGravity = false;
+                mp.useGravity = true;
 #pragma warning restore CS0618
                 mp.enableFly = false;
-                mp.moveSpeed = 0f;
-                mp.enabled = false;
+                mp.enableStrafe = true;
+                mp.moveSpeed = 16.0f;
+                mp.enabled = true;
+                mp.gameObject.SetActive(true);
+                if (mainCam != null && mp.forwardSource == null)
+                {
+                    mp.forwardSource = mainCam.transform;
+                }
+            }
+
+            foreach (var tp in rigInstance.GetComponentsInChildren<TeleportationProvider>(true))
+            {
+                tp.enabled = false;
+            }
+            foreach (var st in rigInstance.GetComponentsInChildren<SnapTurnProvider>(true))
+            {
+                st.enabled = false;
+            }
+            foreach (var ct in rigInstance.GetComponentsInChildren<ContinuousTurnProvider>(true))
+            {
+                ct.enabled = false;
+            }
+            foreach (Transform t in rigInstance.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.IndexOf("Teleport", StringComparison.OrdinalIgnoreCase) >= 0 && t.name != "Locomotion")
+                {
+                    t.gameObject.SetActive(false);
+                }
             }
 
             Transform locomotionTransform = rigInstance.transform.Find("Locomotion");
             if (locomotionTransform != null)
             {
                 Transform moveTransform = locomotionTransform.Find("Move");
-                if (moveTransform != null)
-                {
-                    moveTransform.gameObject.SetActive(false);
-                }
+                if (moveTransform != null) moveTransform.gameObject.SetActive(true);
+
+                Transform gravityTransform = locomotionTransform.Find("Gravity");
+                if (gravityTransform != null) gravityTransform.gameObject.SetActive(true);
+
+                Transform turnTransform = locomotionTransform.Find("Turn");
+                if (turnTransform != null) turnTransform.gameObject.SetActive(false);
+
+                Transform teleportTransform = locomotionTransform.Find("Teleportation");
+                if (teleportTransform != null) teleportTransform.gameObject.SetActive(false);
+
                 Transform grabMoveTransform = locomotionTransform.Find("Grab Move");
-                if (grabMoveTransform != null)
-                {
-                    grabMoveTransform.gameObject.SetActive(false);
-                }
+                if (grabMoveTransform != null) grabMoveTransform.gameObject.SetActive(false);
+
                 Transform climbTransform = locomotionTransform.Find("Climb");
-                if (climbTransform != null)
-                {
-                    climbTransform.gameObject.SetActive(false);
-                }
+                if (climbTransform != null) climbTransform.gameObject.SetActive(false);
+
+                Transform climbTpTransform = locomotionTransform.Find("Climb Teleport");
+                if (climbTpTransform != null) climbTpTransform.gameObject.SetActive(false);
             }
 
             // 3. Ensure EventSystem with ONLY XRUIInputModule properly configured
@@ -401,9 +468,6 @@ namespace BMU.VRTour.Editor
 
             CanvasGroup mainCanvasGroup = canvasObj.AddComponent<CanvasGroup>();
 
-            // Keeps every stage panel (intro, hub, facility hub, room info) reachable at the view edge and out of walls.
-            canvasObj.AddComponent<ViewportEdgeClamp>();
-
             BoxCollider canvasCol = canvasObj.AddComponent<BoxCollider>();
             canvasCol.isTrigger = true;
             canvasCol.size = new Vector3(1400f, 850f, 20f);
@@ -418,162 +482,21 @@ namespace BMU.VRTour.Editor
             deckRect.offsetMin = Vector2.zero;
             deckRect.offsetMax = Vector2.zero;
 
-            // No full-canvas pane and no full-width bars. The stage card is the hero; brand/location,
-            // window controls and narration are small "ornaments" that float a few cm in front of it
-            // at its corners and below it, so the UI reads as spatial objects rather than a web page.
+            // Simplified UI: top ornaments (TitleOrnament / ControlsOrnament with Mute, Move, Restart Tour)
+            // and DockOrb are removed. Only Stage1_IntroCarouselPanel (Main Gate) and
+            // Stage3_LocationInfoPanel (exterior buildings) are retained.
             s_HaloMaterials.Clear();
 
             // ================================================================
-            // TITLE ORNAMENT (top-left): logo + university name + live location
-            // ================================================================
-            GameObject titleOrnament = CreatePanel("TitleOrnament", deckContainer.transform, GlassOrnament, 320f, 54f, s_SpriteGlassPill);
-            RectTransform titleOrnRt = titleOrnament.GetComponent<RectTransform>();
-            titleOrnRt.anchorMin = new Vector2(0.5f, 1f);
-            titleOrnRt.anchorMax = new Vector2(0.5f, 1f);
-            titleOrnRt.pivot = new Vector2(0f, 1f);
-            titleOrnRt.anchoredPosition3D = new Vector3(-560f, -22f, OrnamentDepth);
-            titleOrnament.GetComponent<Image>().raycastTarget = false;
-
-            if (s_SpriteLogo != null)
-            {
-                GameObject logoObj = new GameObject("LogoImage");
-                logoObj.transform.SetParent(titleOrnament.transform, false);
-                Image logoImg = logoObj.AddComponent<Image>();
-                logoImg.sprite = s_SpriteLogo;
-                logoImg.preserveAspect = true;
-                logoImg.raycastTarget = false;
-                RectTransform logoRt = logoObj.GetComponent<RectTransform>();
-                logoRt.anchorMin = new Vector2(0f, 0.5f);
-                logoRt.anchorMax = new Vector2(0f, 0.5f);
-                logoRt.pivot = new Vector2(0f, 0.5f);
-                logoRt.anchoredPosition = new Vector2(14f, 0f);
-                logoRt.sizeDelta = new Vector2(34f, 34f);
-            }
-
-            TextMeshProUGUI brandTitle = CreateText("BrandTitle", titleOrnament.transform, "BML MUNJAL UNIVERSITY", 15f, ColorPitchBlack, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
-            brandTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            RectTransform btRt = brandTitle.GetComponent<RectTransform>();
-            btRt.anchorMin = new Vector2(0f, 0.5f);
-            btRt.anchorMax = new Vector2(1f, 0.5f);
-            btRt.pivot = new Vector2(0f, 0f);
-            btRt.anchoredPosition = new Vector2(56f, 1f);   // left inset 56, right inset 14
-            btRt.sizeDelta = new Vector2(-70f, 22f);
-
-            // Live location line (wired to CampusTourManager.m_HeaderLocationText)
-            TextMeshProUGUI locText = CreateText("LocationText", titleOrnament.transform, "FRONT GATE • WELCOME & INTRO", 12.5f, ColorPitchBlack, FontStyles.Bold, 0f, s_FontSpaceGroteskBold);
-            locText.textWrappingMode = TextWrappingModes.NoWrap;
-            locText.overflowMode = TextOverflowModes.Truncate;
-            locText.enableAutoSizing = true;
-            locText.fontSizeMin = 9.5f;
-            locText.fontSizeMax = 12.5f;
-            RectTransform ltRt = locText.GetComponent<RectTransform>();
-            ltRt.anchorMin = new Vector2(0f, 0.5f);
-            ltRt.anchorMax = new Vector2(1f, 0.5f);
-            ltRt.pivot = new Vector2(0f, 1f);
-            ltRt.anchoredPosition = new Vector2(56f, -1f);
-            ltRt.sizeDelta = new Vector2(-70f, 20f);
-
-            // ================================================================
-            // CONTROLS ORNAMENT (top-right): [Sound] [Recenter] [Restart] [Move] [Minimize]
-            // ================================================================
-            GameObject controlsOrnament = CreatePanel("ControlsOrnament", deckContainer.transform, GlassOrnament, 330f, 54f, s_SpriteGlassPill);
-            RectTransform ctrlOrnRt = controlsOrnament.GetComponent<RectTransform>();
-            ctrlOrnRt.anchorMin = new Vector2(0.5f, 1f);
-            ctrlOrnRt.anchorMax = new Vector2(0.5f, 1f);
-            ctrlOrnRt.pivot = new Vector2(1f, 1f);
-            ctrlOrnRt.anchoredPosition3D = new Vector3(560f, -22f, OrnamentDepth);
-            controlsOrnament.GetComponent<Image>().raycastTarget = false;
-
-            // 1. Minimize Icon Button (- Icon)
-            Button btnHeaderMinimize = CreateIconButton("BtnHeaderMinimize", controlsOrnament.transform, s_SpriteMinimizeDash, Color.white, ColorNavy, 38f, s_SpriteGlassCircle, "Minimize to Dock");
-            RectTransform minRt = btnHeaderMinimize.GetComponent<RectTransform>();
-            minRt.anchorMin = new Vector2(1f, 0.5f);
-            minRt.anchorMax = new Vector2(1f, 0.5f);
-            minRt.pivot = new Vector2(1f, 0.5f);
-            minRt.anchoredPosition = new Vector2(-8f, 0f);
-            ConfigureHeaderButtonFeedback(btnHeaderMinimize, true);
-
-            // 2. Drag to Move Icon Button (+ Directional Move Icon)
-            Button btnHeaderDragMove = CreateIconButton("BtnHeaderDragMove", controlsOrnament.transform, s_SpriteMoveDirectional, Color.white, ColorNavy, 38f, s_SpriteGlassCircle, "Drag to Move");
-            RectTransform dragRt = btnHeaderDragMove.GetComponent<RectTransform>();
-            dragRt.anchorMin = new Vector2(1f, 0.5f);
-            dragRt.anchorMax = new Vector2(1f, 0.5f);
-            dragRt.pivot = new Vector2(1f, 0.5f);
-            dragRt.anchoredPosition = new Vector2(-54f, 0f);
-            ConfigureHeaderButtonFeedback(btnHeaderDragMove, true);
-
-            var dragHandle = btnHeaderDragMove.gameObject.AddComponent<VRUIDraggableHandle>();
-            SetPrivateField(dragHandle, "m_UIRoot", uiRoot.transform);
-            SetPrivateField(dragHandle, "m_LazyFollowUI", lazyFollow);
-            SetPrivateField(dragHandle, "m_HandleImage", btnHeaderDragMove.GetComponent<Image>());
-
-            // 3. Restart Tour Icon Button (Circular Loop Arrow)
-            Button btnRestart = CreateIconButton("BtnHeaderRestart", controlsOrnament.transform, s_SpriteRestartTour, Color.white, ColorAccent, 38f, s_SpriteGlassCircle, "Restart Tour");
-            RectTransform restartRt = btnRestart.GetComponent<RectTransform>();
-            restartRt.anchorMin = new Vector2(1f, 0.5f);
-            restartRt.anchorMax = new Vector2(1f, 0.5f);
-            restartRt.pivot = new Vector2(1f, 0.5f);
-            restartRt.anchoredPosition = new Vector2(-100f, 0f);
-            ConfigureHeaderButtonFeedback(btnRestart, true);
-
-            // 4. Recenter UI Pill Button
-            Button btnRecenter = CreateButton("BtnRecenterUI", controlsOrnament.transform, "Recenter", ColorNavy, 120f, 36f, 15f, s_SpriteRoundedRect12, s_FontPlusJakartaSansBold);
-            RectTransform recRt = btnRecenter.GetComponent<RectTransform>();
-            recRt.anchorMin = new Vector2(1f, 0.5f);
-            recRt.anchorMax = new Vector2(1f, 0.5f);
-            recRt.pivot = new Vector2(1f, 0.5f);
-            recRt.anchoredPosition = new Vector2(-146f, 0f);
-            ConfigureHeaderButtonFeedback(btnRecenter, false);
-
-            // 5. Sound Toggle Icon Button (Circular Frosted Glass with Speaker Icons & Tooltip)
-            Button btnAudioToggle = CreateButton("BtnAudioToggle", controlsOrnament.transform, "", Color.white, 38f, 38f, 14f, s_SpriteGlassCircle);
-            RectTransform batRt = btnAudioToggle.GetComponent<RectTransform>();
-            batRt.anchorMin = new Vector2(1f, 0.5f);
-            batRt.anchorMax = new Vector2(1f, 0.5f);
-            batRt.pivot = new Vector2(1f, 0.5f);
-            batRt.anchoredPosition = new Vector2(-274f, 0f);
-            ConfigureHeaderButtonFeedback(btnAudioToggle, true);
-
-            GameObject speakerOn = new GameObject("SpeakerIconOn");
-            speakerOn.transform.SetParent(btnAudioToggle.transform, false);
-            Image spkOnImg = speakerOn.AddComponent<Image>();
-            spkOnImg.sprite = s_SpriteSpeakerOn;
-            spkOnImg.color = ColorNavy;
-            spkOnImg.preserveAspect = true;
-            spkOnImg.raycastTarget = false;
-            RectTransform sonRt = speakerOn.GetComponent<RectTransform>();
-            sonRt.anchorMin = new Vector2(0.5f, 0.5f);
-            sonRt.anchorMax = new Vector2(0.5f, 0.5f);
-            sonRt.pivot = new Vector2(0.5f, 0.5f);
-            sonRt.sizeDelta = new Vector2(22f, 22f);
-
-            GameObject speakerOff = new GameObject("SpeakerIconOff");
-            speakerOff.transform.SetParent(btnAudioToggle.transform, false);
-            Image spkOffImg = speakerOff.AddComponent<Image>();
-            spkOffImg.sprite = s_SpriteSpeakerOff;
-            spkOffImg.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-            spkOffImg.preserveAspect = true;
-            spkOffImg.raycastTarget = false;
-            speakerOff.SetActive(false);
-            RectTransform soffRt = speakerOff.GetComponent<RectTransform>();
-            soffRt.anchorMin = new Vector2(0.5f, 0.5f);
-            soffRt.anchorMax = new Vector2(0.5f, 0.5f);
-            soffRt.pivot = new Vector2(0.5f, 0.5f);
-            soffRt.sizeDelta = new Vector2(22f, 22f);
-
-            VRHeaderTooltip audioTooltip = btnAudioToggle.gameObject.AddComponent<VRHeaderTooltip>();
-            audioTooltip.TooltipText = "Mute Audio";
-
-            // ================================================================
-            // STAGE 1: INTRO 3D CAROUSEL PANEL
+            // STAGE 1: INTRO 3D CAROUSEL PANEL (Main Gate: Prev / Next / Skip Intro only)
             // ================================================================
             GameObject introPanel = new GameObject("Stage1_IntroCarouselPanel");
             introPanel.transform.SetParent(deckContainer.transform, false);
             RectTransform introRt = introPanel.AddComponent<RectTransform>();
             introRt.anchorMin = Vector2.zero;
             introRt.anchorMax = Vector2.one;
-            introRt.offsetMin = new Vector2(20f, 24f);  // rebalanced vertical margins
-            introRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
+            introRt.offsetMin = new Vector2(20f, 24f);
+            introRt.offsetMax = new Vector2(-20f, -24f);
 
             // Carousel Card (High Fidelity 1120 x 730 with 50% alpha acrylic glass, +35% vertical length)
             GameObject cardObj = CreatePanel("CarouselSlideCard", introPanel.transform, GlassCard, 1120f, 730f, s_SpriteGlassPanel26);
@@ -619,9 +542,9 @@ namespace BMU.VRTour.Editor
 
             // Pointer tags: white rounded rectangles with panel opacity (GlassCard)
             // Left-aligned with the text above (pivot.x = 0), stacked vertically one below the other
-            GameObject pointersContainer = new GameObject("SlidePointersContainer");
+            GameObject pointersContainer = new GameObject("SlidePointersContainer", typeof(RectTransform));
             pointersContainer.transform.SetParent(slideTextStack.transform, false);
-            RectTransform pContRt = pointersContainer.GetComponent<RectTransform>() ?? pointersContainer.AddComponent<RectTransform>();
+            RectTransform pContRt = pointersContainer.GetComponent<RectTransform>();
             pContRt.anchorMin = new Vector2(0f, 1f);
             pContRt.anchorMax = new Vector2(1f, 1f);
             pContRt.pivot = new Vector2(0f, 1f);
@@ -726,69 +649,15 @@ namespace BMU.VRTour.Editor
             }
 
             // ================================================================
-            // STAGE 2: CAMPUS EXPLORATION HUB PANEL
-            // ================================================================
-            GameObject hubPanel = new GameObject("Stage2_CampusHubPanel");
-            hubPanel.transform.SetParent(deckContainer.transform, false);
-            RectTransform hubRt = hubPanel.AddComponent<RectTransform>();
-            hubRt.anchorMin = Vector2.zero;
-            hubRt.anchorMax = Vector2.one;
-            hubRt.offsetMin = new Vector2(20f, 24f);  // rebalanced vertical margins
-            hubRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
-
-            // Hub Heading (own glass card, since there is no background pane behind it)
-            GameObject hubHeadingCard = CreatePanel("HubHeadingCard", hubPanel.transform, GlassCard, 1060f, 100f, s_SpriteGlassPanel16);
-            RectTransform hubHeadingRt = hubHeadingCard.GetComponent<RectTransform>();
-            hubHeadingRt.anchorMin = new Vector2(0.5f, 1f);
-            hubHeadingRt.anchorMax = new Vector2(0.5f, 1f);
-            hubHeadingRt.pivot = new Vector2(0.5f, 1f);
-            hubHeadingRt.anchoredPosition = new Vector2(0f, -4f);
-            hubHeadingCard.GetComponent<Image>().raycastTarget = false;
-
-            TextMeshProUGUI hubTitle = CreateText("HubTitle", hubHeadingCard.transform, "Select a Destination to Begin Tour", 38f, ColorPitchBlack, FontStyles.Bold);
-            hubTitle.alignment = TextAlignmentOptions.Center;
-            RectTransform hubTitleRt = hubTitle.GetComponent<RectTransform>();
-            hubTitleRt.anchorMin = new Vector2(0.5f, 1f);
-            hubTitleRt.anchorMax = new Vector2(0.5f, 1f);
-            hubTitleRt.pivot = new Vector2(0.5f, 1f);
-            hubTitleRt.anchoredPosition = new Vector2(0f, -10f);
-            hubTitleRt.sizeDelta = new Vector2(1000f, 45f);
-
-            TextMeshProUGUI hubSubtitle = CreateText("HubSubtitle", hubHeadingCard.transform, "Choose one of the 3 primary university facilities to teleport directly to its exterior plaza.", 20f, ColorPitchBlack, FontStyles.Bold, 0f, s_FontPlusJakartaSansBold);
-            hubSubtitle.alignment = TextAlignmentOptions.Center;
-            RectTransform hubSubRt = hubSubtitle.GetComponent<RectTransform>();
-            hubSubRt.anchorMin = new Vector2(0.5f, 1f);
-            hubSubRt.anchorMax = new Vector2(0.5f, 1f);
-            hubSubRt.pivot = new Vector2(0.5f, 1f);
-            hubSubRt.anchoredPosition = new Vector2(0f, -58f);
-            hubSubRt.sizeDelta = new Vector2(1000f, 30f);
-
-            // 3 Destination Cards (Interactive full cards with BMU Category photo banners & colored badges)
-            GameObject cardsContainer = new GameObject("CardsContainer");
-            cardsContainer.transform.SetParent(hubPanel.transform, false);
-            RectTransform cardsRt = cardsContainer.AddComponent<RectTransform>();
-            cardsRt.anchorMin = new Vector2(0.5f, 0.44f);
-            cardsRt.anchorMax = new Vector2(0.5f, 0.44f);
-            cardsRt.sizeDelta = new Vector2(1280f, 440f);
-            ConfigureCardRow(cardsContainer, 28f);
-
-            // Card 1: North Block
-            GameObject card1 = CreateBuildingCard("Card_NorthBlock", cardsContainer.transform, "ACADEMIC HUB", "North Block Building", "School of Engineering & Tech, Management, AI labs, and faculty suites.", ColorNavy, s_PhotoNorthBlock, out Button btnNorthBlock);
-            // Card 2: Gateway
-            GameObject card2 = CreateBuildingCard("Card_Gateway", cardsContainer.transform, "ACADEMIC & ADMIN", "Gateway Building", "University Reception, Program Office, ACIC Incubator, and Sports Gymnasium.", ColorPrimary, s_PhotoGateway, out Button btnGateway);
-            // Card 3: Mechanical Workshop
-            GameObject card3 = CreateBuildingCard("Card_Workshop", cardsContainer.transform, "INDUSTRY & LABS", "Mechanical Workshop", "Siemens & Hero MotoCorp hangar, CNCs, 3D printing, and BAJA race bays.", ColorRed, s_PhotoWorkshop, out Button btnWorkshop);
-
-            // ================================================================
-            // STAGE 3: LOCATION SINGLE INFO PANEL
+            // STAGE 3: LOCATION SINGLE INFO PANEL (Middle Infographic Card Only)
             // ================================================================
             GameObject locPanel = new GameObject("Stage3_LocationInfoPanel");
             locPanel.transform.SetParent(deckContainer.transform, false);
             RectTransform locPanelRt = locPanel.AddComponent<RectTransform>();
             locPanelRt.anchorMin = Vector2.zero;
             locPanelRt.anchorMax = Vector2.one;
-            locPanelRt.offsetMin = new Vector2(20f, 24f);  // rebalanced vertical margins
-            locPanelRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
+            locPanelRt.offsetMin = new Vector2(20f, 24f);
+            locPanelRt.offsetMax = new Vector2(-20f, -24f);
 
             // Glass Card for Location Info
             GameObject locCard = CreatePanel("LocInfoCard", locPanel.transform, GlassCard, 1120f, 540f, s_SpriteGlassPanel26);
@@ -811,28 +680,26 @@ namespace BMU.VRTour.Editor
             SetFullStretch(locZone.GetComponent<RectTransform>());
             MakePillFitText(zonePill, locZone, 14);
 
-            // Heading / summary / features stack in the 520px left column. Stacking by preferred
-            // height stops long headings (e.g. "Mechanical Workshop & Vehicle Hangar") or 6-line
-            // summaries from running into the block below.
+            // Heading / summary / features stack in the 580px left column
             GameObject locTextStack = CreateTextStack("LocTextStack", locCard.transform, 14f);
             RectTransform locStackRt = locTextStack.GetComponent<RectTransform>();
             locStackRt.anchorMin = new Vector2(0f, 0f);
             locStackRt.anchorMax = new Vector2(0f, 1f);
             locStackRt.pivot = new Vector2(0f, 1f);
-            locStackRt.offsetMin = new Vector2(50f, 100f);   // stays above the "Go Inside" button
-            locStackRt.offsetMax = new Vector2(630f, -62f);  // 580px wide, below the zone pill
+            locStackRt.offsetMin = new Vector2(50f, 36f);
+            locStackRt.offsetMax = new Vector2(630f, -62f);
 
             TextMeshProUGUI locHeading = CreateText("LocHeading", locTextStack.transform, "North Block Academic Building", 38f, ColorPitchBlack, FontStyles.Bold);
             TextMeshProUGUI locSummary = CreateText("LocSummary", locTextStack.transform, "Location summary paragraph text...", BodyTextSize, ColorPitchBlack, FontStyles.Bold, 14f, s_FontPlusJakartaSansBold);
             TextMeshProUGUI locFeatures = CreateText("LocFeaturesList", locTextStack.transform, "• Feature bullet point 1\n• Feature bullet point 2", 20f, ColorPitchBlack, FontStyles.Bold, 18f, s_FontPlusJakartaSansBold);
 
-            // Right Photo Card with Unsplash Photo (Width 460px with 40px clear gutter)
+            // Right Photo Card
             GameObject photoCard = CreatePanel("PhotoCard", locCard.transform, GlassInner, 400f, 400f, s_SpriteGlassPanel16);
             RectTransform pcRt = photoCard.GetComponent<RectTransform>();
             pcRt.anchorMin = new Vector2(1f, 0.5f);
             pcRt.anchorMax = new Vector2(1f, 0.5f);
             pcRt.pivot = new Vector2(1f, 0.5f);
-            pcRt.anchoredPosition3D = new Vector3(-50f, 25f, -12f); // photo lifts slightly off the card
+            pcRt.anchoredPosition3D = new Vector3(-50f, 0f, -12f);
 
             GameObject locPhotoArea = CreatePanel("PhotoArea", photoCard.transform, Color.white, 370f, 285f, s_SpriteRoundedRect8);
             RectTransform paRt = locPhotoArea.GetComponent<RectTransform>();
@@ -858,181 +725,24 @@ namespace BMU.VRTour.Editor
             capRt.anchoredPosition = new Vector2(0f, 20f);
             capRt.sizeDelta = new Vector2(-30f, 50f);
 
-            // Footer Action Buttons
-            // "ENTER" Primary Pill Button (center aligned text, matching Skip Intro styling & horizontally centered across entire panel)
-            Button btnExploreInterior = CreateButton("BtnExploreInterior", locCard.transform, "ENTER", ColorPrimary, 180f, 48f, 17f, s_SpriteRoundedRect12, s_FontPlusJakartaSansBold);
-            RectTransform biRt = btnExploreInterior.GetComponent<RectTransform>();
-            biRt.anchorMin = new Vector2(0.5f, 0f);
-            biRt.anchorMax = new Vector2(0.5f, 0f);
-            biRt.pivot = new Vector2(0.5f, 0f);
-            biRt.anchoredPosition = new Vector2(0f, 32f);
-
-            // Right: Campus Hub Return Home Icon Button (48x48 frosted glass with home vector icon)
-            Button btnCampHub = CreateIconButton("BtnCampusHubReturn", locCard.transform, s_SpriteHome, ColorNavy, Color.white, 48f, s_SpriteGlassCircle, "Campus Hub");
-            RectTransform bhRt = btnCampHub.GetComponent<RectTransform>();
-            bhRt.anchorMin = new Vector2(1f, 0f);
-            bhRt.anchorMax = new Vector2(1f, 0f);
-            bhRt.pivot = new Vector2(1f, 0f);
-            bhRt.anchoredPosition = new Vector2(-50f, 35f);
-
-            // ================================================================
-            // STAGE 4: INTERNAL BUILDING HUB PANEL
-            // ================================================================
-            GameObject internalPanel = new GameObject("Stage4_InternalBuildingHubPanel");
-            internalPanel.transform.SetParent(deckContainer.transform, false);
-            RectTransform inRt = internalPanel.AddComponent<RectTransform>();
-            inRt.anchorMin = Vector2.zero;
-            inRt.anchorMax = Vector2.one;
-            inRt.offsetMin = new Vector2(20f, 24f);  // rebalanced vertical margins
-            inRt.offsetMax = new Vector2(-20f, -96f); // clear of the top ornaments
-
-            // Heading card: [← Back to Plaza]  tag + title  [Campus Hub →] on one glass card
-            GameObject inHeadingCard = CreatePanel("InternalHeadingCard", internalPanel.transform, GlassCard, 1200f, 106f, s_SpriteGlassPanel16);
-            RectTransform inHeadingRt = inHeadingCard.GetComponent<RectTransform>();
-            inHeadingRt.anchorMin = new Vector2(0.5f, 1f);
-            inHeadingRt.anchorMax = new Vector2(0.5f, 1f);
-            inHeadingRt.pivot = new Vector2(0.5f, 1f);
-            inHeadingRt.anchoredPosition = new Vector2(0f, -4f);
-            inHeadingCard.GetComponent<Image>().raycastTarget = false;
-
-            Button btnBackPlaza = CreateButton("BtnBackToPlaza", inHeadingCard.transform, "Back to Exterior Plaza", ColorAccent, 240f, 42f, 16f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
-            RectTransform bbpRt = btnBackPlaza.GetComponent<RectTransform>();
-            bbpRt.anchorMin = new Vector2(0f, 0.5f);
-            bbpRt.anchorMax = new Vector2(0f, 0.5f);
-            bbpRt.pivot = new Vector2(0f, 0.5f);
-            bbpRt.anchoredPosition = new Vector2(24f, 0f);
-
-            Button btnBackHub = CreateButton("BtnBackToCampusHub", inHeadingCard.transform, "Campus Hub", ColorNavy, 160f, 42f, 16f, s_SpriteGlassPill, s_FontPlusJakartaSansBold);
-            RectTransform bbhRt = btnBackHub.GetComponent<RectTransform>();
-            bbhRt.anchorMin = new Vector2(1f, 0.5f);
-            bbhRt.anchorMax = new Vector2(1f, 0.5f);
-            bbhRt.pivot = new Vector2(1f, 0.5f);
-            bbhRt.anchoredPosition = new Vector2(-24f, 0f);
-
-            // Shorter phrase "Select a Facility" vertically centered in heading card (top-center location pill removed)
-            TextMeshProUGUI inTitle = CreateText("InternalHubTitle", inHeadingCard.transform, "Select a Facility", 38f, ColorPitchBlack, FontStyles.Bold);
-            inTitle.alignment = TextAlignmentOptions.Center;
-            RectTransform inTitRt = inTitle.GetComponent<RectTransform>();
-            inTitRt.anchorMin = new Vector2(0.5f, 0.5f);
-            inTitRt.anchorMax = new Vector2(0.5f, 0.5f);
-            inTitRt.pivot = new Vector2(0.5f, 0.5f);
-            inTitRt.anchoredPosition = Vector2.zero;
-            inTitRt.sizeDelta = new Vector2(600f, 45f);
-
-            // Container for dynamic room cards
-            GameObject roomCardsContainer = new GameObject("RoomCardsContainer");
-            roomCardsContainer.transform.SetParent(internalPanel.transform, false);
-            RectTransform rccRt = roomCardsContainer.AddComponent<RectTransform>();
-            rccRt.anchorMin = new Vector2(0.5f, 0.40f);
-            rccRt.anchorMax = new Vector2(0.5f, 0.40f);
-            rccRt.sizeDelta = new Vector2(1280f, 440f);
-            ConfigureCardRow(roomCardsContainer, 28f);
-
-            // Footer under the room cards ("3 Internal Spaces"); CampusTourManager shows it on the Workshop hub only.
-            TextMeshProUGUI inFooter = CreateText("InternalHubFooter", internalPanel.transform, "3 Internal Spaces", 24f, ColorPitchBlack, FontStyles.Bold);
-            inFooter.alignment = TextAlignmentOptions.Center;
-            RectTransform inFootRt = inFooter.GetComponent<RectTransform>();
-            inFootRt.anchorMin = new Vector2(0.5f, 0f);
-            inFootRt.anchorMax = new Vector2(0.5f, 0f);
-            inFootRt.pivot = new Vector2(0.5f, 0f);
-            inFootRt.anchoredPosition = new Vector2(0f, 8f);
-            inFootRt.sizeDelta = new Vector2(600f, 36f);
-            inFooter.gameObject.SetActive(false);
-
-            // Template room card (Card is the button, unified with ColorPrimary)
-            GameObject templateCard = CreateBuildingCard("RoomCardTemplate", roomCardsContainer.transform, "FACILITY", "Room Name", "Room description...", ColorNavy, s_PhotoNBClassroom, out Button btnTemplate);
-            templateCard.SetActive(false);
-
-            // Tour Audio Narrator (headless audio manager wired to header sound button)
-            uiRoot.AddComponent<VoiceoverManager>(); // 2D AudioSource (RequireComponent) shared by the narrator
+            // Tour Audio Narrator (headless auto-play on zone entry; no mute button)
+            uiRoot.AddComponent<VoiceoverManager>();
             TourAudioNarrator narrator = uiRoot.AddComponent<TourAudioNarrator>();
             SetPrivateField(narrator, "m_CaptionText", null);
             SetPrivateField(narrator, "m_ActiveCaptionColor", ColorPitchBlack);
-            SetPrivateField(narrator, "m_AudioToggleButton", btnAudioToggle);
+            SetPrivateField(narrator, "m_AudioToggleButton", null);
             SetPrivateField(narrator, "m_ToggleButtonText", null);
-            SetPrivateField(narrator, "m_ToggleButtonImage", btnAudioToggle.GetComponent<Image>());
-            SetPrivateField(narrator, "m_SpeakerIconOn", speakerOn);
-            SetPrivateField(narrator, "m_SpeakerIconOff", speakerOff);
+            SetPrivateField(narrator, "m_ToggleButtonImage", null);
+            SetPrivateField(narrator, "m_SpeakerIconOn", null);
+            SetPrivateField(narrator, "m_SpeakerIconOff", null);
             SetPrivateField(narrator, "m_WaveformBars", null);
-
-            // ================================================================
-            // MINIMIZED DOCK ORB
-            // ================================================================
-            // Parked top-right of the view (~17° right, ~9° above eye level at 1.8m). The UI root keeps
-            // lazy-following while minimized, so the orb stays in the top-right periphery.
-            GameObject dockOrbRoot = new GameObject("DockOrbRoot");
-            dockOrbRoot.transform.SetParent(uiRoot.transform, false);
-            dockOrbRoot.transform.localPosition = new Vector3(0.55f, 0.42f, 0f);
-
-            // Visual container: MinimizedDockOrb scales this from 0 -> 1, so everything lives under it
-            GameObject orbVisual = new GameObject("DockOrbVisual");
-            orbVisual.transform.SetParent(dockOrbRoot.transform, false);
-
-            // Glossy 3D bead behind the badge (its rim shows around the logo)
-            GameObject orbSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            orbSphere.name = "OrbBead";
-            orbSphere.transform.SetParent(orbVisual.transform, false);
-            orbSphere.transform.localScale = Vector3.one * 0.09f;
-            Collider beadCol = orbSphere.GetComponent<Collider>();
-            if (beadCol != null) UnityEngine.Object.DestroyImmediate(beadCol);
-
-            MeshRenderer orbRend = orbSphere.GetComponent<MeshRenderer>();
-            orbRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            orbRend.receiveShadows = false;
-            Material orbMat = GetOrCreateMaterial("Assets/Materials/M_DockOrb_Gloss.mat", ColorPrimary, 0.9f);
-            if (orbMat.HasProperty("_Metallic")) orbMat.SetFloat("_Metallic", 0.15f);
-            orbRend.sharedMaterial = orbMat;
-
-            // Badge canvas just in front of the bead, facing the viewer (-Z is toward the user)
-            GameObject orbCanvas = new GameObject("OrbCanvas");
-            orbCanvas.transform.SetParent(orbVisual.transform, false);
-            orbCanvas.transform.localPosition = new Vector3(0f, 0f, -0.05f);
-            Canvas oc = orbCanvas.AddComponent<Canvas>();
-            oc.renderMode = RenderMode.WorldSpace;
-            if (mainCam != null) oc.worldCamera = mainCam;
-            orbCanvas.AddComponent<TrackedDeviceGraphicRaycaster>();
-            RectTransform ocRt = orbCanvas.GetComponent<RectTransform>();
-            ocRt.sizeDelta = new Vector2(140f, 140f);
-            ocRt.localScale = Vector3.one * 0.00075f; // 100px badge = 75mm
-
-            // Soft pulsing halo (MinimizedDockOrb drives its scale)
-            GameObject orbHalo = CreatePanel("OrbHalo", orbCanvas.transform, new Color(0f, 0.53f, 1f, 0.30f), 128f, 128f, s_SpriteGlassCircle);
-            orbHalo.GetComponent<Image>().raycastTarget = false;
-
-            Button btnRestore = CreateButton("BtnRestoreOrb", orbCanvas.transform, "", Color.white, 100f, 100f, 16f, s_SpriteGlassCircle);
-            if (s_SpriteLogo != null)
-            {
-                GameObject orbLogo = new GameObject("OrbLogo");
-                orbLogo.transform.SetParent(btnRestore.transform, false);
-                Image orbImg = orbLogo.AddComponent<Image>();
-                orbImg.sprite = s_SpriteLogo;
-                orbImg.preserveAspect = true;
-                orbImg.raycastTarget = false;
-                RectTransform olRt = orbLogo.GetComponent<RectTransform>();
-                olRt.sizeDelta = new Vector2(64f, 64f);
-            }
-            VRHeaderTooltip orbTip = btnRestore.gameObject.AddComponent<VRHeaderTooltip>();
-            orbTip.TooltipText = "Open Tour Panel";
-
-            MinimizedDockOrb dockOrb = uiRoot.AddComponent<MinimizedDockOrb>();
-            SetPrivateField(dockOrb, "m_MainCanvasContainer", deckContainer);
-            SetPrivateField(dockOrb, "m_DockOrbVisual", orbVisual);
-            SetPrivateField(dockOrb, "m_MainCanvasGroup", mainCanvasGroup);
-            SetPrivateField(dockOrb, "m_PulseRing", orbHalo.transform);
-            SetPrivateField(dockOrb, "m_PulseScaleAmount", 0.12f);
 
             // ================================================================
             // WIRE CAMPUS TOUR MANAGER REFERENCES
             // ================================================================
-            SetPrivateField(tourManager, "m_HeaderLocationText", locText);
-            SetPrivateField(tourManager, "m_BtnResetTour", btnRestart);
-            SetPrivateField(tourManager, "m_BtnRecenterUI", btnRecenter);
             SetPrivateField(tourManager, "m_LazyFollowUI", lazyFollow);
-
             SetPrivateField(tourManager, "m_IntroCarouselPanel", introPanel);
-            SetPrivateField(tourManager, "m_CampusHubPanel", hubPanel);
             SetPrivateField(tourManager, "m_LocationInfoPanel", locPanel);
-            SetPrivateField(tourManager, "m_InternalBuildingHubPanel", internalPanel);
 
             // Intro elements
             SetPrivateField(tourManager, "m_SlideBadgeText", slideBadge);
@@ -1048,11 +758,6 @@ namespace BMU.VRTour.Editor
             SetPrivateField(tourManager, "m_PolaroidCaptions", polaroidCaptions);
             PopulatePhotoSets(tourManager);
 
-            // Hub buttons
-            SetPrivateField(tourManager, "m_BtnSelectNorthBlock", btnNorthBlock);
-            SetPrivateField(tourManager, "m_BtnSelectGateway", btnGateway);
-            SetPrivateField(tourManager, "m_BtnSelectWorkshop", btnWorkshop);
-
             // Loc Info elements
             SetPrivateField(tourManager, "m_LocZoneTag", locZone);
             SetPrivateField(tourManager, "m_LocHeading", locHeading);
@@ -1061,30 +766,15 @@ namespace BMU.VRTour.Editor
             SetPrivateField(tourManager, "m_LocPhotoCaption", photoCaption);
             locPhotoImg = photoCard.transform.Find("PhotoArea")?.GetComponent<Image>();
             SetPrivateField(tourManager, "m_LocPhotoCardImage", locPhotoImg);
-            SetPrivateField(tourManager, "m_BtnExploreInterior", btnExploreInterior);
-            SetPrivateField(tourManager, "m_BtnNextLocation", null);
-            SetPrivateField(tourManager, "m_BtnCampusHubReturn", btnCampHub);
-            SetPrivateField(tourManager, "m_BtnMinimize", btnHeaderMinimize);
+            SetPrivateField(tourManager, "m_WalkSpeed", 16.0f);
+            SetPrivateField(tourManager, "m_AmbientClip", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/ambient.mp3"));
+            SetPrivateField(tourManager, "m_ButtonClickClip", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/button.mp3"));
 
-            // Internal Hub elements
-            SetPrivateField(tourManager, "m_InternalHubTag", null);
-            SetPrivateField(tourManager, "m_InternalHubTitle", inTitle);
-            SetPrivateField(tourManager, "m_InternalHubFooter", inFooter);
-            VoiceoverSetup.ApplyToTourManager(tourManager); // PanelVoiceover clip tables on the stage panels
-            SetPrivateField(tourManager, "m_BtnBackToPlaza", btnBackPlaza);
-            SetPrivateField(tourManager, "m_BtnBackToCampusHub", btnBackHub);
-            SetPrivateField(tourManager, "m_RoomCardsContainer", roomCardsContainer.transform);
-            SetPrivateField(tourManager, "m_RoomCardTemplate", templateCard);
+            VoiceoverSetup.ApplyToTourManager(tourManager);
 
-            // Dock Orb
-            SetPrivateField(tourManager, "m_DockOrb", dockOrb);
-            SetPrivateField(tourManager, "m_BtnRestoreOrb", btnRestore);
-
-            // Set initial stage visibility in edit mode
-            introPanel.SetActive(true);
-            hubPanel.SetActive(false);
+            // Free-roam starts with all UI hidden until the user enters a UI_popup zone
+            introPanel.SetActive(false);
             locPanel.SetActive(false);
-            internalPanel.SetActive(false);
         }
 
         // ====================================================================
@@ -1207,55 +897,40 @@ namespace BMU.VRTour.Editor
 
             SetPrivateField(tourManager, "m_SlidePhotoSets", sets);
 
-            // Location / room photos (same keys and order as CampusTourManager.InitializeTourData locKeys)
+            // Location photos (same keys and order as CampusTourManager.InitializeTourData locKeys)
             Sprite[] locSprites = LoadLocationPhotos();
             SetPrivateField(tourManager, "m_LocationPhotoSprites", locSprites);
-            SetPrivateField(tourManager, "m_LocationCardSprites", LoadLocationCardPhotos());
+            SetPrivateField(tourManager, "m_FoodOutletGallerySprites", LoadFoodOutletGalleryPhotos());
         }
 
-        /// <summary>Photos for the hub / room cards. KEEP IN SYNC with CampusTourManager's locKeys: same keys, same order.</summary>
+        /// <summary>Exterior detail-panel photos. KEEP IN SYNC with CampusTourManager's locKeys: same keys, same order.</summary>
         private static Sprite[] LoadLocationPhotos()
         {
-            // Detail-panel photos (MAPPING.csv "detail photo"). Keys without a mapping keep their previous photo.
             string[] files =
             {
-                "Assets/Textures/Photos/zone_front_gate.jpg",   // front-gate (not in MAPPING.csv)
-                PanelImageDir + "07_exterior_nb1.jpg",          // outside-north-block (S07)
-                PanelImageDir + "09_room_smart.jpg",            // nb-classroom (S09)
-                "Assets/Textures/Photos/zone_nb_classroom_2.jpg", // nb-classroom-2 (not in MAPPING.csv)
-                PanelImageDir + "10_room_arvr.jpg",             // nb-lab (S10)
-                PanelImageDir + "11_room_faculty.jpg",          // nb-faculty (S11)
-                PanelImageDir + "12_exterior_gateway.jpg",      // outside-gateway (S12)
-                PanelImageDir + "15_room_ai.jpg",               // gw-ai-lab (S15)
-                PanelImageDir + "14_room_prog.jpg",             // gw-office (S14)
-                PanelImageDir + "16_room_audi.jpg",             // gw-auditorium (S16)
-                PanelImageDir + "17_exterior_mechext.jpg",      // outside-workshop (S17)
-                PanelImageDir + "19_room_hall.jpg",             // ws-foyer (S19)
-                PanelImageDir + "20_room_kuka.jpg",             // ws-hall (S20)
-                PanelImageDir + "21_room_mech.jpg"              // ws-mech (S21)
+                "Assets/Textures/Photos/zone_front_gate.jpg",           // front-gate
+                PanelImageDir + "07_exterior_nb1.jpg",                  // outside-north-block
+                PanelImageDir + "12_exterior_gateway.jpg",              // outside-gateway
+                PanelImageDir + "17_exterior_mechext.jpg",              // outside-workshop
+                PanelImageDir + "Exterior/gargi_apt.png",               // outside-gargi
+                PanelImageDir + "Exterior/food_maggi.png",              // outside-food-outlets
+                PanelImageDir + "04_carousel3_hostel.jpg",              // outside-vsh
+                PanelImageDir + "04_carousel3_hostel.jpg",              // outside-bsh
+                PanelImageDir + "04_carousel1_library.jpg",             // outside-library
+                PanelImageDir + "Exterior/kch_tower.png",               // outside-kch
+                PanelImageDir + "Exterior/apt_d.png"                    // outside-apj
             };
             return LoadSprites(files);
         }
 
-        /// <summary>Wide hub-card images, same keys/order as LoadLocationPhotos. Null = no card image (keeps the detail photo).</summary>
-        private static Sprite[] LoadLocationCardPhotos()
+        private static Sprite[] LoadFoodOutletGalleryPhotos()
         {
             string[] files =
             {
-                null,                                      // front-gate
-                PanelImageDir + "06_hubcard_nb1.png",      // outside-north-block
-                PanelImageDir + "08_hubcard_smartc.png",   // nb-classroom
-                null,                                      // nb-classroom-2 (not in MAPPING.csv)
-                PanelImageDir + "08_hubcard_arvrc.png",    // nb-lab
-                PanelImageDir + "08_hubcard_faculty.png",  // nb-faculty
-                PanelImageDir + "06_hubcard_gateway.png",  // outside-gateway
-                PanelImageDir + "13_hubcard_aic.png",      // gw-ai-lab
-                PanelImageDir + "13_hubcard_progc.png",    // gw-office
-                PanelImageDir + "13_hubcard_audic.png",    // gw-auditorium
-                PanelImageDir + "06_hubcard_mechextc.png", // outside-workshop
-                PanelImageDir + "18_hubcard_hallc.png",    // ws-foyer
-                PanelImageDir + "18_hubcard_kuka.png",     // ws-hall
-                PanelImageDir + "18_hubcard_mech.png"      // ws-mech
+                PanelImageDir + "Exterior/food_maggi.png",
+                PanelImageDir + "Exterior/food_burger.png",
+                PanelImageDir + "Exterior/food_dominos.png",
+                PanelImageDir + "Exterior/food_cafe.jpeg"
             };
             return LoadSprites(files);
         }
@@ -1270,31 +945,26 @@ namespace BMU.VRTour.Editor
             return sprites;
         }
 
-        /// <summary>Re-applies every panel image (carousel, hub cards, detail photos) to Master_Tour_Core without rebuilding the scene.</summary>
-        [MenuItem("BMU VR Tour/Sync Room Photos Into Master Scene", false, 21)]
+        /// <summary>Re-applies every panel image to Scene_Campus_Exterior without rebuilding the scene.</summary>
+        [MenuItem("BMU VR Tour/Sync Exterior Photos Into Scene", false, 21)]
         public static void SyncRoomPhotosIntoMasterScene()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            var scene = EditorSceneManager.OpenScene("Assets/Scenes/Master_Tour_Core.unity", OpenSceneMode.Single);
+            var scene = EditorSceneManager.OpenScene("Assets/Scenes/Scene_Campus_Exterior.unity", OpenSceneMode.Single);
             var tm = UnityEngine.Object.FindFirstObjectByType<CampusTourManager>();
-            if (tm == null) { Debug.LogError("[BMU VR Tour] CampusTourManager not found in Master_Tour_Core."); return; }
+            if (tm == null) { Debug.LogError("[BMU VR Tour] CampusTourManager not found in Scene_Campus_Exterior."); return; }
             LoadAssets();
 
             int missing = 0;
             SerializedObject so = new SerializedObject(tm);
             missing += AssignSpriteArray(so.FindProperty("m_LocationPhotoSprites"), LoadLocationPhotos());
-            missing += AssignSpriteArray(so.FindProperty("m_LocationCardSprites"), LoadLocationCardPhotos());
+            missing += AssignSpriteArray(so.FindProperty("m_FoodOutletGallerySprites"), LoadFoodOutletGalleryPhotos());
 
             // Carousel sets: rebuild through the same code path the full build uses
             so.ApplyModifiedPropertiesWithoutUndo();
             PopulatePhotoSets(tm);
             so.Update();
 
-            // Scene objects that hold a baked sprite
-            SetCardPhoto("Card_NorthBlock", s_PhotoNorthBlock, ref missing);
-            SetCardPhoto("Card_Gateway", s_PhotoGateway, ref missing);
-            SetCardPhoto("Card_Workshop", s_PhotoWorkshop, ref missing);
-            SetCardPhoto("RoomCardTemplate", s_PhotoNBClassroom, ref missing);
             var polaroids = new SerializedObject(tm).FindProperty("m_PolaroidImages");
             if (polaroids != null)
                 for (int i = 0; i < polaroids.arraySize && i < 3; i++)
@@ -1442,9 +1112,8 @@ namespace BMU.VRTour.Editor
         /// </summary>
         private static GameObject CreateTextStack(string name, Transform parent, float spacing)
         {
-            GameObject stack = new GameObject(name);
+            GameObject stack = new GameObject(name, typeof(RectTransform));
             stack.transform.SetParent(parent, false);
-            stack.AddComponent<RectTransform>();
             VerticalLayoutGroup vlg = stack.AddComponent<VerticalLayoutGroup>();
             vlg.spacing = spacing;
             vlg.childAlignment = TextAnchor.UpperLeft;
@@ -2003,10 +1672,10 @@ namespace BMU.VRTour.Editor
 
         private static GameObject CreatePointerTag(string name, Transform parent, string text, Color tagColor, out TextMeshProUGUI outText)
         {
-            GameObject tagObj = new GameObject(name);
+            GameObject tagObj = new GameObject(name, typeof(RectTransform));
             tagObj.transform.SetParent(parent, false);
 
-            RectTransform tagRt = tagObj.GetComponent<RectTransform>() ?? tagObj.AddComponent<RectTransform>();
+            RectTransform tagRt = tagObj.GetComponent<RectTransform>();
             tagRt.anchorMin = new Vector2(0f, 1f);
             tagRt.anchorMax = new Vector2(0f, 1f);
             tagRt.pivot = new Vector2(0f, 0.5f); // Left-aligned pivot ensures tags align flush with text above with no horizontal offset
@@ -2340,14 +2009,10 @@ namespace BMU.VRTour.Editor
         {
             var scenes = new EditorBuildSettingsScene[]
             {
-                new EditorBuildSettingsScene("Assets/Scenes/Master_Tour_Core.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/Scene_Campus_Exterior.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/Scene_NorthBlock_Interiors.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/Scene_Gateway_Interiors.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/BMU_Workshop_Interior.unity", true)
+                new EditorBuildSettingsScene("Assets/Scenes/Scene_Campus_Exterior.unity", true)
             };
             EditorBuildSettings.scenes = scenes;
-            Debug.Log("[BMU VR Tour] Configured EditorBuildSettings with 4 active tour scenes.");
+            Debug.Log("[BMU VR Tour] Configured EditorBuildSettings for single-scene tour (Scene_Campus_Exterior.unity).");
         }
 
         private static GameObject SetupTourSceneController(GameObject xrRig)
