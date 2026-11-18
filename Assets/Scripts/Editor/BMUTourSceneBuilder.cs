@@ -1525,10 +1525,11 @@ namespace BMU.VRTour.Editor
             }
 
             var hostels = new GameObject("Hostels");
+            // Re-spaced from the aerial (see CampusLayoutBuilder): hostels sit 87 m from the NB edge, 107 m apart, 99 m from the Mechanical Workshop.
             PlaceHostel(hostels.transform, "Assets/Models/Hostels/VikramSarabhai.glb", "VikramSarabhai_Hostel",
-                new Vector3(-684.3f, 0f, -329f), 0f);
+                CampusLayoutBuilder.VikramPivot, 0f);
             PlaceHostel(hostels.transform, "Assets/Models/Hostels/Gargi.glb", "Gargi_Hostel",
-                new Vector3(-700.3f, 0f, -74f), 180f);
+                CampusLayoutBuilder.GargiPivot, 180f);
         }
 
         private static void PlaceHostel(Transform parent, string modelPath, string objName, Vector3 position, float yaw)
@@ -2174,6 +2175,10 @@ namespace BMU.VRTour.Editor
                 // Vikram Sarabhai + Gargi hostels replace the 'BSH' massing boxes (placement notes in PlaceHostels).
                 PlaceHostels(envInstance);
 
+                // Continuous grass + farmland, roads, walkways, curbs and tree belts; hides the legacy tiled lawns/roads
+                // and the 8 x ~1M-triangle grass-blade squares of the campus GLB.
+                CampusLayoutBuilder.Build(envInstance);
+
                 // Remaining untextured massing boxes get a "COMING SOON" treatment until real models arrive.
                 ApplyComingSoonSigns(envInstance);
             }
@@ -2229,6 +2234,9 @@ namespace BMU.VRTour.Editor
             safetyCol.isTrigger = true;
             safetyCol.size = new Vector3(1500f, 1f, 1500f);
             safetyFloor.AddComponent<OutOfBoundsSafetyTrigger>();
+
+            // Realistic lighting: HDRI sky, matched sun, haze, post-processing volume (PC VR). See RealismAtmosphere.cs.
+            RealismAtmosphere.Build();
 
             EditorSceneManager.SaveScene(scene, scenePath);
             AssetDatabase.SaveAssets();
