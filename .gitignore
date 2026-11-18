@@ -150,3 +150,7 @@ $RECYCLE.BIN/
 *.private.meta
 *.origin.meta
 
+
+# Raw Polyhaven Jacaranda glTF buffer (208 MB, over the GitHub file limit). Baked LOD assets are committed instead.
+/Assets/Models/Trees/Jacaranda/jacaranda_tree.bin
+/Assets/Models/Trees/Jacaranda/jacaranda_tree.bin.meta
