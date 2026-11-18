@@ -1525,13 +1525,15 @@ namespace BMU.VRTour.Editor
             }
 
             var hostels = new GameObject("Hostels");
+            // Vikram Sarabhai sits to the left (-X) of the hand-placed BML_BhagatSingh_Hostel building (X -805..-588),
+            // with a 25 m gap, so the two no longer overlap. Gargi is enlarged 1.5x (2.625) to match Vikram's massing.
             PlaceHostel(hostels.transform, "Assets/Models/Hostels/VikramSarabhai.glb", "VikramSarabhai_Hostel",
-                new Vector3(-684.3f, 0f, -329f), 0f);
+                new Vector3(-922.7f, 0f, -329f), 0f);
             PlaceHostel(hostels.transform, "Assets/Models/Hostels/Gargi.glb", "Gargi_Hostel",
-                new Vector3(-700.3f, 0f, -74f), 180f);
+                new Vector3(-700.3f, 0f, -74f), 180f, 2.625f);
         }
 
-        private static void PlaceHostel(Transform parent, string modelPath, string objName, Vector3 position, float yaw)
+        private static void PlaceHostel(Transform parent, string modelPath, string objName, Vector3 position, float yaw, float scale = 1.75f)
         {
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
             if (model == null)
@@ -1543,7 +1545,7 @@ namespace BMU.VRTour.Editor
             GameObject hostel = (GameObject)PrefabUtility.InstantiatePrefab(model);
             hostel.name = objName;
             hostel.transform.SetParent(parent, false);
-            hostel.transform.localScale = Vector3.one * 1.75f;
+            hostel.transform.localScale = Vector3.one * scale;
             hostel.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             hostel.transform.position = position; // y = 0: the models' base is at local y = 0 and the ground here is flat at 0
 
@@ -2143,7 +2145,7 @@ namespace BMU.VRTour.Editor
                     // Model's front (fins/cafe) is on its +Z side, so turn it 180 degrees to face the plaza (-Z).
                     nbInstance.transform.position = new Vector3(-480.25f, 0f, -59f);
                     nbInstance.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-                    nbInstance.transform.localScale = Vector3.one * 1.75f; // 0.5 campus scale x 3.5 campus-size factor (raw model is 2x)
+                    nbInstance.transform.localScale = Vector3.one * 1.75f; // 0.5 campus scale x 3.5 campus-size factor (BML_North_Block_HD is a 2x export, like the original NB_Building)
                 }
                 else
                 {
@@ -2229,6 +2231,10 @@ namespace BMU.VRTour.Editor
             safetyCol.isTrigger = true;
             safetyCol.size = new Vector3(1500f, 1f, 1500f);
             safetyFloor.AddComponent<OutOfBoundsSafetyTrigger>();
+
+            // Re-lay out roads, lawns, trees, buildings and the exterior anchors from the final campus map (Assets/maps).
+            // Runs last so it can move everything created above; it also resizes the safety floor and reflection probe.
+            CampusLayoutBuilder.Apply();
 
             EditorSceneManager.SaveScene(scene, scenePath);
             AssetDatabase.SaveAssets();

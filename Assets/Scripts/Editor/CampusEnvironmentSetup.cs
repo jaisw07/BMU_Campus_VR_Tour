@@ -49,10 +49,13 @@ namespace BMU.VRTour.Editor
         // ------------------------------------------------------------------
         // North Block exterior (detailed building that replaces the NB massing box)
         // ------------------------------------------------------------------
-        // Real-size model exported at 2x (like the campus GLB), with the recessed double door (NB_Main_Door).
-        // The prefab keeps the raw 2x size; the scene builder applies the campus scale (0.5 x 3.5 = 1.75).
-        private const string NorthBlockGlbPath = "Assets/Models/Exterior/NB_Building.glb";
-        public const string NorthBlockPrefabPath = "Assets/Prefabs/Environment/Prefab_Exterior_NorthBlock.prefab";
+        // UPDATE: now uses BML_North_Block_HD.glb, a textured 2x export like the old NB_Building.glb (building 125.2 x 50.5 x 69.4 m raw),
+        // so the scene builder's 1.75 gives the same campus size. The GLB also carries site parts (NB_Ground 240 x 200 m, NB_Plaza_Tiles,
+        // NB_Path) that would z-fight with the campus paving and cover the outlet plaza: the prefab deactivates them.
+        // It has no NB_Main_Door node (the old walkable entrance recess). Older prefabs/GLBs (NB_Building, BML_North_Block_Realistic) stay, unused.
+        private const string NorthBlockGlbPath = "Assets/Models/Exterior/BML_North_Block_HD.glb";
+        public const string NorthBlockPrefabPath = "Assets/Prefabs/Environment/Prefab_Exterior_NorthBlock_HD.prefab";
+        private static readonly string[] NorthBlockSiteParts = { "NB_Ground", "NB_Plaza_Tiles", "NB_Path" };
 
         // Only these NB_ parts get MeshColliders (walls, slabs, roof, stairs, steps). Windows, fins, chillers and
         // the door (NB_Main_Door, glass included) stay collider-free so the recess is walkable.
@@ -96,6 +99,12 @@ namespace BMU.VRTour.Editor
                 }
             }
 
+            // Site parts that come with the HD GLB (ground plane, plaza floor, path): the campus already has its own ground.
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (System.Array.IndexOf(NorthBlockSiteParts, t.name) >= 0) t.gameObject.SetActive(false);
+            }
+
             string dir = Path.GetDirectoryName(NorthBlockPrefabPath);
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
@@ -118,9 +127,12 @@ namespace BMU.VRTour.Editor
         // World scale 1.0 (= 0.5 campus scale x 2). The North Block / Workshop factor of 1.75 does NOT fit here: it makes
         // the Gateway 246 m wide and overlaps the Library, Maggi Point and the entry road. 1.0 matches the old GA_GB
         // massing box footprint (140.5 m wide along Z) exactly.
-        public const float GatewayWorldScale = 1.0f;
-        // Footprint centre. Canopy front edge (local z = 47.9) lands 10 m beyond Anchor_Gateway_Plaza (-116.5, -87.33).
-        public static readonly Vector3 GatewayPosition = new Vector3(-174.4f, 0f, -87.33f);
+        // UPDATE: enlarged to 1.3 so the Gateway reads bigger next to the North Block (height 57 m vs NB 88 m, was 44 m).
+        // The canopy front edge is kept fixed at x = -127 (10 m before Anchor_Gateway_Plaza); the extra size grows backwards
+        // (-X, to x = -251) and sideways (Z -179..4). The Maggi Point kiosk (hand-placed) was moved left to keep a 15 m gap.
+        public const float GatewayWorldScale = 1.3f;
+        // Footprint centre. Canopy front edge lands 10 m beyond Anchor_Gateway_Plaza (-116.5, -87.33); x was -174.4 at scale 1.0.
+        public static readonly Vector3 GatewayPosition = new Vector3(-188.77f, 0f, -87.33f);
         // Model front (+Z) must face the plaza anchor, which is on the +X side: Y rotation +90.
         public static readonly Quaternion GatewayRotation = Quaternion.Euler(0f, 90f, 0f);
 

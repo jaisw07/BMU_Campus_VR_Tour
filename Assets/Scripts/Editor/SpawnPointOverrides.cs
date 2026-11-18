@@ -28,12 +28,7 @@ namespace BMU.VRTour.Editor
 
         public static readonly Dictionary<string, Spawn> Table = new Dictionary<string, Spawn>
         {
-            // Intro UI: closer to the entrance gate (was x = 14).
-            { "Anchor_FrontGate",                  new Spawn(new Vector3(4.0f, 0.0f, 0.0f)) },
-            // North Block exterior: further back so the whole 219 m x 88 m facade and roof line fit in view (was z = -127.5).
-            { "Anchor_NorthBlock_Plaza",           new Spawn(new Vector3(-480.23f, 0.0f, -230.0f)) },
-            // Mechanical Lab exterior: centred on the entrance bay (was x = -411.63).
-            { "Anchor_Workshop_Plaza",             new Spawn(new Vector3(-461.5f, 0.0f, -275.0f)) },
+            // Exterior anchors (front gate, North Block, workshop, gateway) are positioned by CampusLayoutBuilder from the campus map.
             // Smart Case Study Room (NB-105): horizontal centre of the room (was x = 30.48, against the wall).
             { "Anchor_NB105_Entrance",             new Spawn(new Vector3(25.0f, 0.66f, 6.22f), 180f) },
             // Standard Classroom: front (whiteboard wall) centre, still facing the back wall (was mid-room, off-centre).
