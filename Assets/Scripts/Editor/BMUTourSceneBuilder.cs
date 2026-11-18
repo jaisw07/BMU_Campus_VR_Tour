@@ -1506,6 +1506,61 @@ namespace BMU.VRTour.Editor
         /// applied to the box itself would smear down the walls. Boxes already replaced by real models (NB,
         /// MechanicalWorkshop) are deactivated before this runs and are skipped.
         /// </summary>
+        /// <summary>
+        /// Adds the two hostel models under a root-level "Hostels" object (scale 1, siblings of the campus environment).
+        /// Positions were calibrated from Assets/Art/Reference/aerial_layout.png.png: ~0.40 m per aerial pixel measured
+        /// on the North Block (217 m long), image north = world -X, image east = world +Z. The long side of both runs
+        /// along world X (north-south in the aerial). Fronts face the shared road gap (Vikram +Z, Gargi -Z).
+        /// Scale 1.75 = same campus-size factor as the North Block / Workshop / Gateway. The ground here (PondArea) is y = 0.
+        /// Z values were nudged (Vikram -12 m, Gargi +9 m) so entrance paving does not sit on the WorkshopFront / TowardsGargi roads.
+        /// </summary>
+        private static void PlaceHostels(GameObject envInstance)
+        {
+            // Hide the BSH massing boxes the hostels replace.
+            foreach (Transform t in envInstance.GetComponentsInChildren<Transform>(true))
+            {
+                if ((t.name == "MainBuildingBSH" || t.name == "SideBSH1" || t.name == "SideBSH2" || t.name == "Mess")
+                    && t.GetComponent<MeshFilter>() != null)
+                    t.gameObject.SetActive(false);
+            }
+
+            var hostels = new GameObject("Hostels");
+            PlaceHostel(hostels.transform, "Assets/Models/Hostels/VikramSarabhai.glb", "VikramSarabhai_Hostel",
+                new Vector3(-684.3f, 0f, -329f), 0f);
+            PlaceHostel(hostels.transform, "Assets/Models/Hostels/Gargi.glb", "Gargi_Hostel",
+                new Vector3(-700.3f, 0f, -74f), 180f);
+        }
+
+        private static void PlaceHostel(Transform parent, string modelPath, string objName, Vector3 position, float yaw)
+        {
+            GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+            if (model == null)
+            {
+                Debug.LogWarning($"[BMUTourSceneBuilder] {modelPath} not found; skipping {objName}.");
+                return;
+            }
+
+            GameObject hostel = (GameObject)PrefabUtility.InstantiatePrefab(model);
+            hostel.name = objName;
+            hostel.transform.SetParent(parent, false);
+            hostel.transform.localScale = Vector3.one * 1.75f;
+            hostel.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            hostel.transform.position = position; // y = 0: the models' base is at local y = 0 and the ground here is flat at 0
+
+            foreach (Transform t in hostel.GetComponentsInChildren<Transform>(true))
+            {
+                t.gameObject.layer = 0;
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject, (StaticEditorFlags)(-1));
+            }
+            foreach (MeshFilter mf in hostel.GetComponentsInChildren<MeshFilter>())
+            {
+                if (mf.sharedMesh == null || mf.GetComponent<Collider>() != null) continue;
+                BoxCollider box = mf.gameObject.AddComponent<BoxCollider>(); // cheap (63-71k tri models), players never walk inside
+                box.center = mf.sharedMesh.bounds.center;
+                box.size = mf.sharedMesh.bounds.size;
+            }
+        }
+
         private static void ApplyComingSoonSigns(GameObject envRoot)
         {
             Texture2D signTex = LoadComingSoonTexture();
@@ -2115,6 +2170,9 @@ namespace BMU.VRTour.Editor
 
                 // The Gateway replaces the 'GA_GB' massing box (placement/scale/materials/colliders live in CampusEnvironmentSetup).
                 CampusEnvironmentSetup.PlaceGateway(envInstance.transform);
+
+                // Vikram Sarabhai + Gargi hostels replace the 'BSH' massing boxes (placement notes in PlaceHostels).
+                PlaceHostels(envInstance);
 
                 // Remaining untextured massing boxes get a "COMING SOON" treatment until real models arrive.
                 ApplyComingSoonSigns(envInstance);
