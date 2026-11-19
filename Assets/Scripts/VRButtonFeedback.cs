@@ -319,6 +319,8 @@ namespace BMU.VRTour
                 // Subtly lift button face brightness
                 m_ButtonImage.color = Color.Lerp(m_OriginalColor, Color.white, 0.22f);
             }
+
+            VRHaptics.PulseHover();
         }
 
         public void OnPointerExit(PointerEventData eventData)
@@ -347,6 +349,8 @@ namespace BMU.VRTour
             {
                 CampusTourManager.Instance.PlayButtonClickSound();
             }
+
+            VRHaptics.PulseClick();
         }
 
         public void OnPointerUp(PointerEventData eventData)

@@ -243,16 +243,28 @@ namespace BMU.VRTour.Editor
                 }
             }
 
-            // Ensure CharacterController exists on the XR Origin for building/world wall collision
-            CharacterController cc = rigInstance.GetComponentInChildren<CharacterController>(true);
+            // Always normalize CharacterController on the XR Origin (prefab may have stale off-center offset/tiny radius)
+            CharacterController cc = rigInstance.GetComponent<CharacterController>();
             if (cc == null)
             {
+                foreach (var oldCc in rigInstance.GetComponentsInChildren<CharacterController>(true))
+                {
+                    if (oldCc.gameObject != rigInstance) UnityEngine.Object.DestroyImmediate(oldCc);
+                }
                 cc = rigInstance.AddComponent<CharacterController>();
-                cc.radius = 0.35f;
-                cc.height = 1.75f;
-                cc.center = new Vector3(0f, 0.875f, 0f);
-                cc.stepOffset = 0.4f;
-                cc.slopeLimit = 45f;
+            }
+            cc.enabled = true;
+            cc.radius = 0.45f;
+            cc.height = 1.80f;
+            cc.center = new Vector3(0f, 0.90f, 0f);
+            cc.skinWidth = 0.08f;
+            cc.stepOffset = 0.35f;
+            cc.slopeLimit = 45f;
+
+            // Disable GrabMoveProvider so grip buttons cannot pull player through building colliders
+            foreach (var gm in rigInstance.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement.GrabMoveProvider>(true))
+            {
+                gm.enabled = false;
             }
 
             // 1. Configure all CurveVisualControllers for full visible light pointers

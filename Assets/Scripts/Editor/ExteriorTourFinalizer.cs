@@ -42,7 +42,9 @@ namespace BMU.VRTour.Editor
             "Hostels",
             "MainGate",
             "Main_Gate",
-            "Campus_Entrance"
+            "Campus_Entrance",
+            "RMS",
+            "FacultyHousing"
         };
 
         [MenuItem("BMU VR Tour/Finalize Exterior Scene (Single-Scene Setup)", false, 2)]
@@ -87,13 +89,14 @@ namespace BMU.VRTour.Editor
 
             // Reload active reference in case ApplySkybox saved
             scene = SceneManager.GetActiveScene();
+            int blockerCount = CreateSolidBuildingBlockers(scene);
             Bounds worldBounds = CreateWorldBorderWalls(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
 
-            Debug.Log($"[ExteriorTourFinalizer] Single-scene tour ready in '{ExteriorScenePath}': {triggerCount} holographic UI_popup zones, {groundedCount} buildings grounded/sealed, {roadSegments} road/plaza segments built, {colliderCount} solid building/ground colliders added, {disabledTpCount} teleport interactables disabled, world border bounds = {worldBounds.min} to {worldBounds.max}.");
+            Debug.Log($"[ExteriorTourFinalizer] Single-scene tour ready in '{ExteriorScenePath}': {triggerCount} holographic UI_popup zones, {groundedCount} buildings grounded/sealed, {roadSegments} road/plaza segments built, {colliderCount} solid building/ground colliders + {blockerCount} building volume blockers added, {disabledTpCount} teleport interactables disabled, world border bounds = {worldBounds.min} to {worldBounds.max}.");
         }
 
         private static readonly (string name, Vector3 pos, Vector3 scale)[] DefaultPopupZones =
@@ -656,6 +659,13 @@ namespace BMU.VRTour.Editor
                    lower.Contains("cafe") ||
                    lower.Contains("gate") ||
                    lower.Contains("wall") ||
+                   lower.Contains("wing") ||
+                   lower.Contains("tower") ||
+                   lower.Contains("kiosk") ||
+                   lower.Contains("container") ||
+                   lower.Contains("stairs") ||
+                   lower.Contains("rms") ||
+                   lower.Contains("faculty") ||
                    lower.Contains("building") ||
                    lower.Contains("buildingspace") ||
                    lower.Contains("door") ||
@@ -722,55 +732,118 @@ namespace BMU.VRTour.Editor
         }
 
         // ====================================================================
-        // 4. WORLD BORDER COLLIDER WALLS
+        // 4. SOLID EXTERIOR BUILDING VOLUME BLOCKERS & PATH/GARDEN BORDER WALLS
         // ====================================================================
+        private static int CreateSolidBuildingBlockers(Scene scene)
+        {
+            GameObject existing = GameObject.Find("[Building_Exterior_Blockers]");
+            if (existing != null) UnityEngine.Object.DestroyImmediate(existing);
+
+            GameObject root = new GameObject("[Building_Exterior_Blockers]");
+            int created = 0;
+
+            // Seal individual enclosed building shells/wings solidly so high-speed walking or roomscale lean cannot enter buildings,
+            // while leaving all exterior roads, plazas, open courtyards (e.g. BSH center garden), steps, and UI_popup zones 100% open.
+            var wingSpecs = new (string label, string searchName, float yHeight)[]
+            {
+                // Gateway wings & atrium
+                ("Blocker_GA_Building",      "GA_Building",          30f),
+                ("Blocker_GA_GlassAtrium",   "GA_GlassAtrium",       22f),
+                // North Block main shell (south courtyard & road_0001 remain open)
+                ("Blocker_NB_Shell",         "NB_Shell_Hollow",      30f),
+                // Workshop enclosed hall (front paved apron & stairs remain open)
+                ("Blocker_WS_Floors",        "Floors",               30f),
+                ("Blocker_WS_StairTower",    "Stair_Tower",          30f),
+                ("Blocker_WS_OpenFrameBay",  "Open_Frame_Bay",       30f),
+                // Gargi Hostel wings & tower (front stairs & road remain open)
+                ("Blocker_GGH_WingWest",     "GGH_WingWest",         30f),
+                ("Blocker_GGH_Tower",        "GGH_Tower",            30f),
+                ("Blocker_GGH_WingEast",     "GGH_WingEast",         30f),
+                // Vikram Sarabhai Hostel wings & tower (front green steps & road remain open)
+                ("Blocker_VSH_WingWest",     "VSH_WingWest",         30f),
+                ("Blocker_VSH_WingEast",     "VSH_WingEast",         30f),
+                ("Blocker_VSH_Tower",        "VSH_Tower",            30f),
+                ("Blocker_VSH_Ends",         "VSH_Ends",             30f),
+                // Bhagat Singh Hostel U-wings & tower (center garden courtyard & planters remain open!)
+                ("Blocker_BSH_Tower",        "BSH_Tower",            30f),
+                ("Blocker_BSH_WingWest",     "BSH_WingWest",         30f),
+                ("Blocker_BSH_WingEast",     "BSH_WingEast",         30f),
+                // Library & Medical Centre building (red-brick front terrace remains open)
+                ("Blocker_Library",          "LM_Building",          20f),
+                // Food Outlet kiosks/containers (courtyard grass & central walkway remain open)
+                ("Blocker_Maggi_Kiosk",      "MGP_Kiosk",            15f),
+                ("Blocker_Xpress_Kiosk",     "CXP_Kiosk",            15f),
+                ("Blocker_Dominos",          "DMP_Containers",       15f),
+                ("Blocker_Burger",           "BSP_Containers",       15f),
+                // Main Gate guard booth + background RMS & Faculty Housing blocks
+                ("Blocker_Gate_HutBlue",     "Hut_Blue",             10f),
+                ("Blocker_Gate_HutWhite",    "Hut_White",            10f),
+                ("Blocker_RMS",              "RMS",                  40f),
+                ("Blocker_FacultyHousing",   "FacultyHousing",       40f),
+            };
+
+            foreach (var spec in wingSpecs)
+            {
+                GameObject target = FindSceneChildByName(scene, spec.searchName);
+                if (target == null) continue;
+
+                // Disambiguate "Floors" so we specifically grab BMU_Workshop's Floors
+                if (spec.searchName == "Floors")
+                {
+                    target = FindSceneChildUnderParent(scene, "BMU_Workshop", "Floors");
+                    if (target == null) continue;
+                }
+
+                if (!TryComputeRendererBounds(target, out Bounds b)) continue;
+
+                float height = Mathf.Max(spec.yHeight, 12f);
+                Vector3 center = new Vector3(b.center.x, height * 0.5f - 1f, b.center.z);
+                Vector3 size = new Vector3(Mathf.Max(2f, b.size.x), height, Mathf.Max(2f, b.size.z));
+                CreateBorderWall(root.transform, spec.label, center, size);
+                created++;
+            }
+
+            return created;
+        }
+
+        private static GameObject FindSceneChildByName(Scene scene, string objName)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == objName) return t.gameObject;
+                }
+            }
+            return null;
+        }
+
+        private static GameObject FindSceneChildUnderParent(Scene scene, string parentName, string childName)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (Transform p in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (p.name != parentName) continue;
+                    foreach (Transform c in p.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (c.name == childName) return c.gameObject;
+                    }
+                }
+            }
+            return null;
+        }
+
         private static Bounds CreateWorldBorderWalls(Scene scene)
         {
             GameObject existing = GameObject.Find("[World_Border_Walls]");
             if (existing != null) UnityEngine.Object.DestroyImmediate(existing);
 
-            // Calculate playable campus bounds from buildings, UI_popup zones, anchors, and plazas
-            Bounds b = new Bounds(new Vector3(-400f, 0f, -150f), Vector3.zero);
-            bool hasPoints = false;
-
-            foreach (GameObject root in scene.GetRootGameObjects())
-            {
-                if (root.name == "OutOfBounds_ResetFloor" || root.name == "Campus_Exterior_ReflectionProbe" ||
-                    root.name == "Exterior_Directional_Light")
-                    continue;
-
-                bool includeRoot = IsBuildingRoot(root.name) || IsUIPopupName(root.name) ||
-                                   root.name == "Exterior_Navigation_Anchors" || root.name == "ER Road Mesh" ||
-                                   root.name == "[Campus_Roads_And_Plazas]" ||
-                                   root.name.StartsWith("Plaza_", StringComparison.OrdinalIgnoreCase);
-
-                if (includeRoot)
-                {
-                    foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true))
-                    {
-                        if (!r.enabled) continue;
-                        if (!hasPoints) { b = r.bounds; hasPoints = true; }
-                        else b.Encapsulate(r.bounds);
-                    }
-                    foreach (Collider c in root.GetComponentsInChildren<Collider>(true))
-                    {
-                        if (!hasPoints) { b = c.bounds; hasPoints = true; }
-                        else b.Encapsulate(c.bounds);
-                    }
-                }
-            }
-
-            // Fallback bounds if scene had no matching bounds
-            if (!hasPoints)
-            {
-                b.SetMinMax(new Vector3(-960f, -5f, -380f), new Vector3(80f, 40f, 120f));
-            }
-
-            const float margin = 40f;
-            float minX = b.min.x - margin;
-            float maxX = b.max.x + margin;
-            float minZ = b.min.z - margin;
-            float maxZ = b.max.z + margin;
+            // Tight playable exterior envelope containing ONLY landscaped paths, plazas, roads, and campus gardens/courtyards
+            const float minX = -962f;
+            const float maxX = 68f;
+            const float minZ = -382f;
+            const float maxZ = 20f;
 
             float width = maxX - minX;
             float depth = maxZ - minZ;
@@ -781,10 +854,21 @@ namespace BMU.VRTour.Editor
             float centerY = 12f;
 
             GameObject borderRoot = new GameObject("[World_Border_Walls]");
-            CreateBorderWall(borderRoot.transform, "Border_North", new Vector3(minX - wallThickness * 0.5f, centerY, centerZ), new Vector3(wallThickness, wallHeight, depth + wallThickness * 2f));
-            CreateBorderWall(borderRoot.transform, "Border_South", new Vector3(maxX + wallThickness * 0.5f, centerY, centerZ), new Vector3(wallThickness, wallHeight, depth + wallThickness * 2f));
-            CreateBorderWall(borderRoot.transform, "Border_West", new Vector3(centerX, centerY, minZ - wallThickness * 0.5f), new Vector3(width + wallThickness * 2f, wallHeight, wallThickness));
-            CreateBorderWall(borderRoot.transform, "Border_East", new Vector3(centerX, centerY, maxZ + wallThickness * 0.5f), new Vector3(width + wallThickness * 2f, wallHeight, wallThickness));
+            // Main Gate / VSH / North / South perimeter walls
+            CreateBorderWall(borderRoot.transform, "Border_West_VSH", new Vector3(minX - wallThickness * 0.5f, centerY, centerZ), new Vector3(wallThickness, wallHeight, depth + wallThickness * 2f));
+            CreateBorderWall(borderRoot.transform, "Border_East_MainGate", new Vector3(maxX + wallThickness * 0.5f, centerY, centerZ), new Vector3(wallThickness, wallHeight, depth + wallThickness * 2f));
+            CreateBorderWall(borderRoot.transform, "Border_South_Campus", new Vector3(centerX, centerY, minZ - wallThickness * 0.5f), new Vector3(width + wallThickness * 2f, wallHeight, wallThickness));
+            CreateBorderWall(borderRoot.transform, "Border_North_Campus", new Vector3(centerX, centerY, maxZ + wallThickness * 0.5f), new Vector3(width + wallThickness * 2f, wallHeight, wallThickness));
+
+            // Off-path bare dirt/void guards keeping player strictly on paths, plazas, and landscaped gardens
+            // 1. Bare dirt south-east behind Entrance & Library (x: -245..+68, z: -382..-254)
+            CreateBorderWall(borderRoot.transform, "Guard_Southeast_Void", new Vector3(-88.5f, centerY, -318f), new Vector3(313f, wallHeight, 128f));
+            // 2. Bare brown ground south of Main Gate forecourt & east of Library (x: -94..+68, z: -254..-66)
+            CreateBorderWall(borderRoot.transform, "Guard_East_BarrenDirt", new Vector3(-13f, centerY, -160f), new Vector3(162f, wallHeight, 188f));
+            // 3. Unlandscaped gap north-west behind Gargi & north of VSH road (x: -962..-805, z: -200..+20)
+            CreateBorderWall(borderRoot.transform, "Guard_Northwest_Void", new Vector3(-883.5f, centerY, -90f), new Vector3(157f, wallHeight, 220f));
+            // 4. Bare dirt east/north of Library corridor before Entrance boulevard (x: -108..+68, z: -46..-28) -> keep open near Main Gate forecourt only at x >= -108
+            // Guard off-path east of Entrance north road (x: -108..+68, z: +14..+24) already clamped at maxZ=20.
 
             // Backup continuous safety ground plane at y = -0.25 so gravity never drops the player between road/plaza seams
             GameObject backupFloor = new GameObject("Backup_Walkable_Ground");

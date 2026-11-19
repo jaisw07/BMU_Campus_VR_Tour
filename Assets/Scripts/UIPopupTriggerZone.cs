@@ -71,6 +71,7 @@ namespace BMU.VRTour
             if (m_PlayerInside) return;
 
             m_PlayerInside = true;
+            VRHaptics.PulseZoneEnter();
             if (CampusTourManager.Instance == null) return;
 
             if (m_IsMainGate || m_LocationKey == "main-gate" || m_LocationKey == "front-gate")
@@ -91,6 +92,7 @@ namespace BMU.VRTour
             if (m_PlayerColliderCount > 0 || !m_PlayerInside) return;
 
             m_PlayerInside = false;
+            VRHaptics.PulseZoneExit();
             if (CampusTourManager.Instance == null) return;
 
             string expectedKey = m_IsMainGate ? "main-gate" : m_LocationKey;

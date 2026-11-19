@@ -184,6 +184,117 @@ namespace BMU.VRTour
             HandleGamepadJoystickMovement();
         }
 
+        private void LateUpdate()
+        {
+            EnforcePlayerCollisionAndBounds();
+        }
+
+        private readonly Collider[] _overlapBuffer = new Collider[32];
+        private Vector3 m_LastFootstepPos;
+        private bool m_HasFootstepPos = false;
+        private float m_FootstepAccumulated = 0f;
+        private bool m_NextLeftFoot = true;
+
+        private void EnforcePlayerCollisionAndBounds()
+        {
+            if (m_CachedXROrigin == null) m_CachedXROrigin = Object.FindAnyObjectByType<XROrigin>();
+            if (m_CachedXROrigin == null) return;
+            if (m_CachedCC == null) m_CachedCC = m_CachedXROrigin.GetComponent<CharacterController>();
+
+            Transform originTf = m_CachedXROrigin.transform;
+            Transform camTf = m_CachedXROrigin.Camera != null ? m_CachedXROrigin.Camera.transform : null;
+
+            // Keep CharacterController capsule centered under the headset XZ in local rig space
+            float headLocalX = 0f;
+            float headLocalZ = 0f;
+            if (camTf != null)
+            {
+                Vector3 localHead = originTf.InverseTransformPoint(camTf.position);
+                headLocalX = localHead.x;
+                headLocalZ = localHead.z;
+            }
+            if (m_CachedCC != null)
+            {
+                m_CachedCC.center = new Vector3(headLocalX, m_CachedCC.height * 0.5f, headLocalZ);
+            }
+
+            // World-space capsule around actual player head XZ (blocks XRInteractionSimulator WASD + roomscale lean into walls)
+            float radius = m_CachedCC != null ? Mathf.Max(0.40f, m_CachedCC.radius) : 0.45f;
+            float height = m_CachedCC != null ? Mathf.Max(1.6f, m_CachedCC.height) : 1.8f;
+
+            bool bumpedWall = false;
+            for (int iter = 0; iter < 4; iter++)
+            {
+                Vector3 centerWorld = originTf.TransformPoint(new Vector3(headLocalX, 0f, headLocalZ));
+                Vector3 p0 = new Vector3(centerWorld.x, originTf.position.y + radius + 0.40f, centerWorld.z);
+                Vector3 p1 = new Vector3(centerWorld.x, originTf.position.y + height - radius, centerWorld.z);
+
+                int hitCount = Physics.OverlapCapsuleNonAlloc(p0, p1, radius, _overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
+                bool pushed = false;
+                for (int i = 0; i < hitCount; i++)
+                {
+                    Collider col = _overlapBuffer[i];
+                    if (col == null || col == m_CachedCC) continue;
+                    if (col.transform.IsChildOf(originTf)) continue;
+
+                    if (m_CachedCC != null && Physics.ComputePenetration(
+                        m_CachedCC, originTf.position, originTf.rotation,
+                        col, col.transform.position, col.transform.rotation,
+                        out Vector3 dir, out float dist))
+                    {
+                        Vector3 horiz = new Vector3(dir.x, 0f, dir.z);
+                        if (horiz.sqrMagnitude > 0.0001f && dist > 0.001f)
+                        {
+                            originTf.position += horiz.normalized * (dist + 0.01f);
+                            pushed = true;
+                            if (dist > 0.02f) bumpedWall = true;
+                        }
+                    }
+                }
+                if (!pushed) break;
+            }
+
+            // Hard outer campus path/garden envelope fallback
+            Vector3 p = originTf.position;
+            float clampedX = Mathf.Clamp(p.x, -962f, 68f);
+            float clampedZ = Mathf.Clamp(p.z, -382f, 20f);
+            if (!Mathf.Approximately(clampedX, p.x) || !Mathf.Approximately(clampedZ, p.z))
+            {
+                bumpedWall = true;
+                p.x = clampedX;
+                p.z = clampedZ;
+                originTf.position = p;
+            }
+
+            if (bumpedWall)
+            {
+                VRHaptics.PulseWallBump();
+            }
+
+            // Alternating left/right micro-haptic footstep cadence as player walks along campus paths
+            Vector3 flatPos = new Vector3(originTf.position.x, 0f, originTf.position.z);
+            if (!m_HasFootstepPos)
+            {
+                m_LastFootstepPos = flatPos;
+                m_HasFootstepPos = true;
+            }
+            else
+            {
+                float stepDist = Vector3.Distance(flatPos, m_LastFootstepPos);
+                if (stepDist > 0.01f && stepDist < 8f)
+                {
+                    m_FootstepAccumulated += stepDist;
+                    if (m_FootstepAccumulated >= 2.6f)
+                    {
+                        m_FootstepAccumulated = 0f;
+                        VRHaptics.PulseFootstep(m_NextLeftFoot);
+                        m_NextLeftFoot = !m_NextLeftFoot;
+                    }
+                }
+                m_LastFootstepPos = flatPos;
+            }
+        }
+
         private void TryConfigureXRSimulatorSpeed()
         {
             var sim = Object.FindAnyObjectByType<XRInteractionSimulator>();
@@ -214,14 +325,21 @@ namespace BMU.VRTour
             if (fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
             Vector3 rightVec = new Vector3(fwd.z, 0f, -fwd.x);
 
-            Vector3 motion = (rightVec * combined.x + fwd * combined.y) * (m_WalkSpeed * Time.deltaTime);
+            Vector3 totalMotion = (rightVec * combined.x + fwd * combined.y) * (m_WalkSpeed * Time.deltaTime);
             if (m_CachedCC != null && m_CachedCC.enabled)
             {
-                m_CachedCC.Move(motion);
+                // Substep fast movement so player cannot tunnel through building walls or perimeter guards
+                float dist = totalMotion.magnitude;
+                int steps = Mathf.Clamp(Mathf.CeilToInt(dist / 0.25f), 1, 8);
+                Vector3 step = totalMotion / steps;
+                for (int s = 0; s < steps; s++)
+                {
+                    m_CachedCC.Move(step);
+                }
             }
             else
             {
-                m_CachedXROrigin.transform.position += motion;
+                m_CachedXROrigin.transform.position += totalMotion;
             }
         }
 
@@ -247,6 +365,27 @@ namespace BMU.VRTour
             }
 
             // Free-roam VR: keep InputActionManager, LocomotionMediator, and ContinuousMoveProvider enabled (both sticks walk)
+            var xrOrigin = Object.FindAnyObjectByType<XROrigin>();
+            if (xrOrigin != null)
+            {
+                var cc = xrOrigin.GetComponent<CharacterController>();
+                if (cc == null) cc = xrOrigin.gameObject.AddComponent<CharacterController>();
+                cc.enabled = true;
+                cc.radius = 0.45f;
+                cc.height = 1.80f;
+                cc.center = new Vector3(0f, 0.90f, 0f);
+                cc.skinWidth = 0.08f;
+                cc.stepOffset = 0.35f;
+                cc.slopeLimit = 45f;
+                m_CachedCC = cc;
+                m_CachedXROrigin = xrOrigin;
+            }
+
+            foreach (var gm in Object.FindObjectsByType<GrabMoveProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                gm.enabled = false;
+            }
+
             foreach (var iam in Object.FindObjectsByType<InputActionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 iam.enabled = true;
@@ -623,6 +762,7 @@ namespace BMU.VRTour
         // ====================================================================
         public void NextSlide()
         {
+            VRHaptics.PulseSlide();
             if (m_CurrentSlideIndex < m_Slides.Count - 1)
             {
                 m_CurrentSlideIndex++;
@@ -638,6 +778,7 @@ namespace BMU.VRTour
         {
             if (m_CurrentSlideIndex > 0)
             {
+                VRHaptics.PulseSlide();
                 m_CurrentSlideIndex--;
                 UpdateCarouselDisplay();
             }

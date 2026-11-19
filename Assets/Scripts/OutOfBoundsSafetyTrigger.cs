@@ -51,6 +51,7 @@ namespace BMU.VRTour
             if (isPlayer)
             {
                 m_LastTriggerTime = Time.time;
+                VRHaptics.PulseBoundaryAlert();
                 Debug.LogWarning($"[OutOfBoundsSafetyTrigger] Player breached room boundary on '{name}'! Recovering position...");
                 ExecuteRecovery();
             }
