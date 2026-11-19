@@ -359,6 +359,13 @@ namespace BMU.VRTour.Editor
                 count++;
             }
 
+            // The hardcoded heights above are only a starting point. Snap every building, kiosk and tree onto the
+            // ground that actually exists under it, so nothing floats (or sinks) if the ground meshes move.
+            Physics.SyncTransforms();
+            var groundReport = new System.Text.StringBuilder();
+            int snapped = GroundAllModels.Apply(scene, true, groundReport);
+            Debug.Log($"[ExteriorTourFinalizer] GroundAllModels snapped {snapped} model(s) onto the ground.\n{groundReport}");
+
             return count;
         }
 
@@ -606,7 +613,7 @@ namespace BMU.VRTour.Editor
             return added;
         }
 
-        private static bool IsGroundOrRoadMesh(GameObject go)
+        internal static bool IsGroundOrRoadMesh(GameObject go)
         {
             string lower = go.name.ToLowerInvariant();
             if (lower.Contains("campus_ground") || lower.Contains("er road") || lower == "surface" ||
@@ -775,10 +782,11 @@ namespace BMU.VRTour.Editor
                 ("Blocker_Xpress_Kiosk",     "CXP_Kiosk",            15f),
                 ("Blocker_Dominos",          "DMP_Containers",       15f),
                 ("Blocker_Burger",           "BSP_Containers",       15f),
-                // Main Gate guard booth + background RMS & Faculty Housing blocks
-                ("Blocker_Gate_HutBlue",     "Hut_Blue",             10f),
-                ("Blocker_Gate_HutWhite",    "Hut_White",            10f),
-                ("Blocker_RMS",              "RMS",                  40f),
+                // NOTE: Hut_Blue / Hut_White are NOT booths. They are huge flat meshes (61x94 m and 3x71 m, ~2.7 m tall)
+                // in the main gate approach. A full-height AABB blocker over them walls off the front gate, so they are
+                // intentionally excluded (they keep their own MeshColliders from EnsureSolidBuildingColliders).
+                // Background RMS & Faculty Housing blocks
+                ("Blocker_RMS",             "RMS",                  40f),
                 ("Blocker_FacultyHousing",   "FacultyHousing",       40f),
             };
 

@@ -7,6 +7,7 @@ using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
@@ -141,7 +142,8 @@ namespace BMU.VRTour
                 m_AmbientSource.loop = true;
                 m_AmbientSource.playOnAwake = false;
                 m_AmbientSource.spatialBlend = 0f;
-                m_AmbientSource.volume = m_AmbientVolume;
+                m_AmbientSource.volume = Mathf.Max(m_AmbientVolume, 0.6f); // scene stores 0.25, which was too quiet on Quest
+                AudioListener.volume = 1f;
                 m_AmbientSource.Play();
             }
 
@@ -162,7 +164,7 @@ namespace BMU.VRTour
             if (m_UiSfxSource == null) SetupAudioSources();
             if (m_UiSfxSource != null)
             {
-                m_UiSfxSource.PlayOneShot(m_ButtonClickClip, m_ButtonClickVolume);
+                m_UiSfxSource.PlayOneShot(m_ButtonClickClip, 1f);
             }
         }
 
@@ -407,21 +409,32 @@ namespace BMU.VRTour
                 mp.enableStrafe = true;
                 mp.inAirControlModifier = 1.0f;
                 mp.moveSpeed = m_WalkSpeed;
+                // Standard VR layout: LEFT stick = move/strafe relative to where the head is facing.
+                if (mp.forwardSource == null && xrOrigin != null && xrOrigin.Camera != null)
+                    mp.forwardSource = xrOrigin.Camera.transform;
+                mp.rightHandMoveInput.inputSourceMode = XRInputValueReader.InputSourceMode.Unused;
                 mp.leftHandMoveInput.EnableDirectActionIfModeUsed();
-                mp.rightHandMoveInput.EnableDirectActionIfModeUsed();
             }
 
             foreach (var tp in Object.FindObjectsByType<TeleportationProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 tp.enabled = false;
             }
+            // RIGHT stick = rotate. Snap turn (comfort-friendly): flick left/right to turn 45 degrees.
             foreach (var st in Object.FindObjectsByType<SnapTurnProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                st.enabled = false;
+                st.gameObject.SetActive(true);
+                st.enabled = true;
+                st.enableTurnLeftRight = true;
+                st.enableTurnAround = false;
+                st.turnAmount = 45f;
+                st.debounceTime = 0.35f;
+                st.leftHandTurnInput.inputSourceMode = XRInputValueReader.InputSourceMode.Unused;
+                st.rightHandTurnInput.EnableDirectActionIfModeUsed();
             }
             foreach (var ct in Object.FindObjectsByType<ContinuousTurnProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                ct.enabled = false;
+                ct.enabled = false; // snap turn is used instead
             }
 
             var curveControllers = Object.FindObjectsByType<CurveVisualController>(FindObjectsSortMode.None);
@@ -432,8 +445,11 @@ namespace BMU.VRTour
                 cvc.maxVisualCurveDistance = 25f;
                 cvc.lineDynamicsMode = LineDynamicsMode.Traditional;
 
+                // The pointer ray is shown for aiming at UI, but hidden while the player walks or turns (VRRayAutoHide).
+                cvc.enabled = true;
                 var lr = cvc.GetComponent<LineRenderer>();
                 if (lr != null) lr.enabled = true;
+                if (cvc.GetComponent<VRRayAutoHide>() == null) cvc.gameObject.AddComponent<VRRayAutoHide>();
             }
 
             var nearFarInteractors = Object.FindObjectsByType<NearFarInteractor>(FindObjectsSortMode.None);

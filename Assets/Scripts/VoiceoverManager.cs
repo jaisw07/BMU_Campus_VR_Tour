@@ -52,6 +52,21 @@ namespace BMU.VRTour
             if (s_Instance == this) s_Instance = null;
         }
 
+        /// <summary>Linear gain applied to the narration on top of AudioSource.volume (which is capped at 1).</summary>
+        [SerializeField, Range(1f, 6f)] private float m_VoiceGain = 3f;
+
+        // Runs on the audio thread: boosts quiet narration, with a soft limiter (tanh) so peaks don't hard-clip.
+        private void OnAudioFilterRead(float[] data, int channels)
+        {
+            float g = m_VoiceGain;
+            if (g <= 1.001f) return;
+            for (int i = 0; i < data.Length; i++)
+            {
+                float v = data[i] * g;
+                data[i] = v > 0.9f || v < -0.9f ? (float)System.Math.Tanh(v) : v;
+            }
+        }
+
         /// <summary>Stops whatever is playing (short fade) and plays <paramref name="clip"/> after <paramref name="startDelay"/>. A null clip just stops.</summary>
         public void Play(AudioClip clip, float startDelay = 0.3f)
         {

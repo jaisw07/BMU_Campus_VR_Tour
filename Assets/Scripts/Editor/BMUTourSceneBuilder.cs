@@ -276,11 +276,14 @@ namespace BMU.VRTour.Editor
                 cvc.maxVisualCurveDistance = 25f;
                 cvc.lineDynamicsMode = LineDynamicsMode.Traditional;
 
+                // Pointer ray stays visible for aiming at UI, but VRRayAutoHide hides it while the player walks or turns.
+                cvc.enabled = true;
                 var lr = cvc.GetComponent<LineRenderer>();
                 if (lr != null)
                 {
                     lr.enabled = true;
                 }
+                if (cvc.GetComponent<VRRayAutoHide>() == null) cvc.gameObject.AddComponent<VRRayAutoHide>();
             }
 
             // 1b. Attach VRPointerReticle (small blue circle) to NearFarInteractors
@@ -303,6 +306,7 @@ namespace BMU.VRTour.Editor
                 mp.enableFly = false;
                 mp.enableStrafe = true;
                 mp.moveSpeed = 16.0f;
+                mp.rightHandMoveInput.inputSourceMode = UnityEngine.XR.Interaction.Toolkit.Inputs.Readers.XRInputValueReader.InputSourceMode.Unused;
                 mp.enabled = true;
                 mp.gameObject.SetActive(true);
                 if (mainCam != null && mp.forwardSource == null)
@@ -315,9 +319,15 @@ namespace BMU.VRTour.Editor
             {
                 tp.enabled = false;
             }
+            // Left stick = move (head-relative), right stick = 45 degree snap turn
             foreach (var st in rigInstance.GetComponentsInChildren<SnapTurnProvider>(true))
             {
-                st.enabled = false;
+                st.enabled = true;
+                st.enableTurnLeftRight = true;
+                st.enableTurnAround = false;
+                st.turnAmount = 45f;
+                st.debounceTime = 0.35f;
+                st.leftHandTurnInput.inputSourceMode = UnityEngine.XR.Interaction.Toolkit.Inputs.Readers.XRInputValueReader.InputSourceMode.Unused;
             }
             foreach (var ct in rigInstance.GetComponentsInChildren<ContinuousTurnProvider>(true))
             {
@@ -341,7 +351,7 @@ namespace BMU.VRTour.Editor
                 if (gravityTransform != null) gravityTransform.gameObject.SetActive(true);
 
                 Transform turnTransform = locomotionTransform.Find("Turn");
-                if (turnTransform != null) turnTransform.gameObject.SetActive(false);
+                if (turnTransform != null) turnTransform.gameObject.SetActive(true); // right-stick snap turn
 
                 Transform teleportTransform = locomotionTransform.Find("Teleportation");
                 if (teleportTransform != null) teleportTransform.gameObject.SetActive(false);
